@@ -1,0 +1,38 @@
+{
+  "first_blood": {
+    "name": "第一滴血",
+    "desc": "累计击杀1个敌人",
+    "req": {"kills": 1},
+    "reward_points": 100
+  },
+  "zombie_slayer": {
+    "name": "丧尸杀手",
+    "desc": "累计击杀10个敌人",
+    "req": {"kills": 10},
+    "reward_points": 500
+  },
+  "rich_man": {
+    "name": "挥金如土",
+    "desc": "累计消费3000积分",
+    "req": {"points_spent": 3000},
+    "reward_points": 500
+  },
+  "saint": {
+    "name": "圣母降临",
+    "desc": "道德值达到10点",
+    "req": {"morality_high": 10},
+    "reward_points": 1000
+  },
+  "devil": {
+    "name": "恶魔化身",
+    "desc": "道德值降至-10点",
+    "req": {"morality_low": -10},
+    "reward_points": 1000
+  },
+  "die_hard": {
+    "name": "死而不僵",
+    "desc": "累计死亡1次",
+    "req": {"deaths": 1},
+    "reward_points": 200
+  }
+}

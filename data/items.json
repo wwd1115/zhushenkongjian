@@ -1,0 +1,15 @@
+{
+  "weapons": {
+    "tactical_knife": {"name": "战术刀", "price": 200, "attack": 25, "desc": "基础冷兵器。"},
+    "pistol": {"name": "手枪", "price": 500, "attack": 50, "desc": "基础热武器。"},
+    "energy_sword": {"name": "能量光剑", "price": 2000, "attack": 120, "desc": "高级能量武器。"}
+  },
+  "armors": {
+    "bulletproof_vest": {"name": "防弹衣", "price": 800, "defense": 15, "desc": "基础防具。"},
+    "energy_shield": {"name": "能量护盾", "price": 3000, "defense": 40, "desc": "高级防具。"}
+  },
+  "consumables": {
+    "medkit": {"name": "医疗包", "price": 100, "heal": 100, "desc": "恢复100点生命。"},
+    "stimulant": {"name": "兴奋剂", "price": 300, "mp_restore": 50, "desc": "恢复50点精神力。"}
+  }
+}

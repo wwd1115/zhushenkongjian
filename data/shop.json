@@ -1,0 +1,155 @@
+{
+    "bloodlines": {
+        "vampire": {
+            "name": "吸血鬼血统",
+            "type": "bloodline",
+            "desc": "以血为生，惧怕阳光的夜之眷族。物理系。",
+            "levels": [
+                {"level": "男爵", "cost": 2000, "stats": {"str": 5, "agi": 5}, "effects": [{"name": "生命吸取", "value": 5}]},
+                {"level": "伯爵", "cost": 10000, "stats": {"str": 15, "agi": 15}, "effects": [{"name": "生命吸取", "value": 15}]},
+                {"level": "公爵", "cost": 50000, "stats": {"str": 30, "agi": 30}, "effects": [{"name": "生命吸取", "value": 30}]},
+                {"level": "真祖", "cost": 200000, "stats": {"str": 50, "agi": 50}, "effects": [{"name": "生命吸取", "value": 50}]}
+            ]
+        },
+        "werewolf": {
+            "name": "狼人血统",
+            "type": "bloodline",
+            "desc": "月夜狂化的野兽。物理系。",
+            "levels": [
+                {"level": "初级", "cost": 2500, "stats": {"str": 8, "con": 8}, "effects": [{"name": "暴击率提升", "value": 10}]},
+                {"level": "中级", "cost": 12000, "stats": {"str": 20, "con": 20}, "effects": [{"name": "暴击率提升", "value": 20}]},
+                {"level": "高级", "cost": 60000, "stats": {"str": 40, "con": 40}, "effects": [{"name": "暴击率提升", "value": 30}]},
+                {"level": "远古狼神", "cost": 250000, "stats": {"str": 60, "con": 60}, "effects": [{"name": "暴击率提升", "value": 50}]}
+            ]
+        },
+        "titan": {
+            "name": "泰坦血统",
+            "type": "bloodline",
+            "desc": "巨大的身躯与力量。物理系。",
+            "levels": [
+                {"level": "山岭巨人", "cost": 3000, "stats": {"str": 10, "con": 10}, "effects": [{"name": "坚韧不拔", "value": 10}]},
+                {"level": "风暴巨人", "cost": 15000, "stats": {"str": 25, "con": 25}, "effects": [{"name": "坚韧不拔", "value": 25}]},
+                {"level": "远古泰坦", "cost": 75000, "stats": {"str": 50, "con": 50}, "effects": [{"name": "坚韧不拔", "value": 50}]},
+                {"level": "星空泰坦", "cost": 300000, "stats": {"str": 80, "con": 80}, "effects": [{"name": "坚韧不拔", "value": 80}]}
+            ]
+        },
+        "saiyan": {
+            "name": "赛亚人血统",
+            "type": "bloodline",
+            "desc": "战斗民族，濒死恢复后战斗力大增。物理系。",
+            "levels": [
+                {"level": "下级战士", "cost": 4000, "stats": {"str": 15, "agi": 10, "con": 10}, "effects": [{"name": "狂暴打击", "value": 10}]},
+                {"level": "精英战士", "cost": 20000, "stats": {"str": 40, "agi": 30, "con": 30}, "effects": [{"name": "狂暴打击", "value": 25}]},
+                {"level": "超级赛亚人", "cost": 100000, "stats": {"str": 100, "agi": 80, "con": 80}, "effects": [{"name": "狂暴打击", "value": 60}]},
+                {"level": "超赛神", "cost": 500000, "stats": {"str": 250, "agi": 200, "con": 200}, "effects": [{"name": "全属性增强", "value": 100}]}
+            ]
+        },
+        "kryptonian": {
+            "name": "氪星人血统",
+            "type": "bloodline",
+            "desc": "在黄色的太阳下如同神明。全能系。",
+            "levels": [
+                {"level": "初级吸收", "cost": 5000, "stats": {"str": 20, "con": 20, "agi": 20}, "effects": [{"name": "全属性增强", "value": 5}]},
+                {"level": "中级吸收", "cost": 30000, "stats": {"str": 60, "con": 60, "agi": 60}, "effects": [{"name": "全属性增强", "value": 15}]},
+                {"level": "完美氪星人", "cost": 150000, "stats": {"str": 150, "con": 150, "agi": 150}, "effects": [{"name": "全属性增强", "value": 40}]},
+                {"level": "白银超人", "cost": 1000000, "stats": {"str": 500, "con": 500, "agi": 500, "int": 500}, "effects": [{"name": "全属性增强", "value": 100}]}
+            ]
+        },
+        "uchiha": {
+            "name": "宇智波血统",
+            "type": "bloodline",
+            "desc": "写轮眼的拥有者。精神/敏捷系。",
+            "levels": [
+                {"level": "单勾玉", "cost": 3000, "stats": {"per": 15, "int": 10}, "effects": [{"name": "闪避率提升", "value": 5}]},
+                {"level": "三勾玉", "cost": 15000, "stats": {"per": 40, "int": 30}, "effects": [{"name": "闪避率提升", "value": 15}]},
+                {"level": "万花筒", "cost": 80000, "stats": {"per": 100, "int": 80, "agi": 50}, "effects": [{"name": "闪避率提升", "value": 30}]},
+                {"level": "轮回眼", "cost": 400000, "stats": {"per": 250, "int": 200, "agi": 100}, "effects": [{"name": "闪避率提升", "value": 50}, {"name": "虚空之力", "value": 50}]}
+            ]
+        },
+        "cyborg": {
+            "name": "机械飞升",
+            "type": "bloodline",
+            "desc": "血肉苦弱，只尊科技。物理/科技系。",
+            "levels": [
+                {"level": "义体改造", "cost": 2000, "stats": {"str": 10, "con": 10}, "effects": [{"name": "破甲", "value": 5}]},
+                {"level": "半机械化", "cost": 10000, "stats": {"str": 30, "con": 30, "int": 20}, "effects": [{"name": "破甲", "value": 15}]},
+                {"level": "全金属狂潮", "cost": 60000, "stats": {"str": 80, "con": 80, "int": 60}, "effects": [{"name": "破甲", "value": 35}]},
+                {"level": "硅基生命", "cost": 300000, "stats": {"str": 150, "con": 150, "int": 150}, "effects": [{"name": "破甲", "value": 60}]}
+            ]
+        }
+    },
+    "cultivation": {
+        "qi_gathering": {
+            "name": "基础吐纳法",
+            "type": "cultivation",
+            "desc": "烂大街的修仙基础法诀。",
+            "levels": [
+                {"level": "练气一层", "cost": 1000, "stats": {"int": 5, "con": 5}, "effects": [{"name": "经验加成", "value": 10}]},
+                {"level": "练气五层", "cost": 3000, "stats": {"int": 15, "con": 15}, "effects": [{"name": "经验加成", "value": 20}]},
+                {"level": "练气大圆满", "cost": 10000, "stats": {"int": 35, "con": 35}, "effects": [{"name": "经验加成", "value": 30}]}
+            ]
+        },
+        "star_transformation": {
+            "name": "星辰变",
+            "type": "cultivation",
+            "desc": "汲取宇宙星河之力，霸道无比。",
+            "levels": [
+                {"level": "星云期", "cost": 5000, "stats": {"int": 20, "str": 20}, "effects": [{"name": "雷电穿透", "value": 15}]},
+                {"level": "流星期", "cost": 25000, "stats": {"int": 60, "str": 60}, "effects": [{"name": "雷电穿透", "value": 30}]},
+                {"level": "黑洞期", "cost": 120000, "stats": {"int": 150, "str": 150}, "effects": [{"name": "雷电穿透", "value": 60}, {"name": "虚空之力", "value": 60}]},
+                {"level": "宇宙期", "cost": 800000, "stats": {"int": 400, "str": 400}, "effects": [{"name": "雷电穿透", "value": 120}, {"name": "虚空之力", "value": 150}]}
+            ]
+        },
+        "devouring_heavens": {
+            "name": "吞天魔功",
+            "type": "cultivation",
+            "desc": "吞噬万物本源化为己用，魔道至高法门。",
+            "levels": [
+                {"level": "魔种", "cost": 6000, "stats": {"int": 25, "con": 15}, "effects": [{"name": "暗影侵蚀", "value": 20}]},
+                {"level": "噬魂", "cost": 30000, "stats": {"int": 80, "con": 40}, "effects": [{"name": "暗影侵蚀", "value": 50}]},
+                {"level": "吞天", "cost": 150000, "stats": {"int": 200, "con": 100}, "effects": [{"name": "暗影侵蚀", "value": 100}, {"name": "灵魂收割", "value": 50}]}
+            ]
+        },
+        "magic_circuit": {
+            "name": "魔术回路",
+            "type": "cultivation",
+            "desc": "体内植入魔术回路，西幻法师的最爱。",
+            "levels": [
+                {"level": "初级回路", "cost": 3000, "stats": {"int": 15}, "effects": [{"name": "法力护盾", "value": 15}]},
+                {"level": "高级回路", "cost": 12000, "stats": {"int": 45}, "effects": [{"name": "法力护盾", "value": 30}]},
+                {"level": "源石回路", "cost": 50000, "stats": {"int": 120}, "effects": [{"name": "法力护盾", "value": 60}]},
+                {"level": "根源接入", "cost": 200000, "stats": {"int": 250}, "effects": [{"name": "法力护盾", "value": 120}, {"name": "时间扭曲", "value": 2}]}
+            ]
+        }
+    },
+    "weapons": [
+        {"id": "w_1", "name": "[白板] 生锈的铁剑", "type": "weapon", "subtype": "sword", "quality": "白板", "level_req": 1, "value": 100, "cost": 200, "desc": "勉强能造成伤害。", "attack": 10, "special_effects": []},
+        {"id": "w_2", "name": "[精良] 合金战锤", "type": "weapon", "subtype": "axe", "quality": "精良", "level_req": 5, "value": 1000, "cost": 2000, "desc": "势大力沉的制式战锤。", "attack": 35, "special_effects": []},
+        {"id": "w_3", "name": "[精良] 高斯手枪", "type": "weapon", "subtype": "gun", "quality": "精良", "level_req": 5, "value": 1500, "cost": 3000, "desc": "电磁轨道加速的动能武器。", "attack": 40, "agi": 5, "special_effects": [{"name": "破甲", "value": 10}]},
+        {"id": "w_4", "name": "[稀有] 高能激光剑", "type": "weapon", "subtype": "sword", "quality": "稀有", "level_req": 10, "value": 5000, "cost": 10000, "desc": "切割金属如泥。", "attack": 80, "special_effects": [{"name": "火焰附加", "value": 20}]},
+        {"id": "w_5", "name": "[稀有] 精灵复合弓", "type": "weapon", "subtype": "bow", "quality": "稀有", "level_req": 12, "value": 6000, "cost": 12000, "desc": "附带风属性的远距离杀器。", "attack": 75, "agi": 20, "special_effects": [{"name": "速度爆发", "value": 5}]},
+        {"id": "w_6", "name": "[史诗] 霜之哀伤 (仿)", "type": "weapon", "subtype": "sword", "quality": "史诗", "level_req": 20, "value": 25000, "cost": 50000, "desc": "拥有冰封一切的邪恶力量。", "attack": 200, "str": 30, "special_effects": [{"name": "寒冰附加", "value": 50}, {"name": "灵魂收割", "value": 15}]},
+        {"id": "w_7", "name": "[史诗] 誓约胜利之剑", "type": "weapon", "subtype": "sword", "quality": "史诗", "level_req": 25, "value": 50000, "cost": 100000, "desc": "EX咖喱棒，汇聚星光的一击。", "attack": 300, "str": 50, "cha": 50, "special_effects": [{"name": "神圣打击", "value": 60}]},
+        {"id": "w_8", "name": "[传说] 盘古斧", "type": "weapon", "subtype": "axe", "quality": "传说", "level_req": 40, "value": 250000, "cost": 800000, "desc": "开天辟地的无极神器！", "attack": 1200, "str": 300, "con": 150, "special_effects": [{"name": "狂暴打击", "value": 50}, {"name": "破甲", "value": 30}]},
+        {"id": "w_9", "name": "[传说] 诛仙剑", "type": "weapon", "subtype": "sword", "quality": "传说", "level_req": 50, "value": 500000, "cost": 1500000, "desc": "第一杀阵压阵神兵，可诛仙神。", "attack": 2000, "int": 400, "per": 200, "special_effects": [{"name": "虚空之力", "value": 100}, {"name": "暗影侵蚀", "value": 80}]}
+    ],
+    "armors": [
+        {"id": "a_1", "name": "[白板] 粗布衣", "type": "armor", "subtype": "chest", "quality": "白板", "level_req": 1, "value": 50, "cost": 100, "desc": "连风都挡不住。", "defense": 5, "special_effects": []},
+        {"id": "a_2", "name": "[精良] 防弹特战服", "type": "armor", "subtype": "chest", "quality": "精良", "level_req": 5, "value": 800, "cost": 1500, "desc": "基础防弹衣。", "defense": 30, "con": 10, "special_effects": []},
+        {"id": "a_3", "name": "[稀有] 光学隐身斗篷", "type": "armor", "subtype": "chest", "quality": "稀有", "level_req": 15, "value": 8000, "cost": 15000, "desc": "降低存在感。", "defense": 60, "agi": 25, "special_effects": [{"name": "闪避率提升", "value": 5}]},
+        {"id": "a_4", "name": "[史诗] 龙鳞铠甲", "type": "armor", "subtype": "chest", "quality": "史诗", "level_req": 25, "value": 40000, "cost": 80000, "desc": "坚不可摧的龙鳞制成。", "defense": 250, "str": 40, "con": 60, "special_effects": [{"name": "伤害反射", "value": 20}]},
+        {"id": "a_5", "name": "[史诗] AT力场项链", "type": "armor", "subtype": "necklace", "quality": "史诗", "level_req": 30, "value": 60000, "cost": 120000, "desc": "绝对心之壁不可逾越！", "defense": 400, "int": 50, "special_effects": [{"name": "法力护盾", "value": 40}]},
+        {"id": "a_6", "name": "[传说] 紫绶仙衣", "type": "armor", "subtype": "chest", "quality": "传说", "level_req": 45, "value": 300000, "cost": 1000000, "desc": "水火不侵，神鬼难近的仙家法衣。", "defense": 1500, "int": 300, "con": 300, "special_effects": [{"name": "全属性增强", "value": 20}]},
+        {"id": "a_7", "name": "[传说] 星能机动装甲", "type": "armor", "subtype": "chest", "quality": "传说", "level_req": 50, "value": 400000, "cost": 1200000, "desc": "宇宙最强科技结晶。", "defense": 2000, "str": 400, "agi": 300, "special_effects": [{"name": "速度爆发", "value": 10}, {"name": "破甲", "value": 20}]}
+    ],
+    "consumables": [
+        {"id": "c_1", "name": "低级恢复药剂", "type": "consumable", "cost": 50, "desc": "战斗外恢复 15% 生命值", "effect": "heal_15"},
+        {"id": "c_2", "name": "中级恢复药剂", "type": "consumable", "cost": 200, "desc": "战斗外恢复 35% 生命值", "effect": "heal_35"},
+        {"id": "c_3", "name": "高级生化凝胶", "type": "consumable", "cost": 800, "desc": "战斗外恢复 80% 生命值", "effect": "heal_80"},
+        {"id": "c_4", "name": "便携式修复舱", "type": "consumable", "cost": 1500, "desc": "满状态恢复", "effect": "heal_100"},
+        {"id": "c_5", "name": "属性强化糖果", "type": "consumable", "cost": 2000, "desc": "全永久属性 +1", "effect": "stats_up_1"},
+        {"id": "c_6", "name": "高级基因强化液", "type": "consumable", "cost": 8000, "desc": "永久全属性 +5", "effect": "stats_up_5"},
+        {"id": "c_7", "name": "仙丹·九转金丹", "type": "consumable", "cost": 50000, "desc": "永久全属性 +30", "effect": "stats_up_30"},
+        {"id": "c_8", "name": "复活十字章", "type": "consumable", "cost": 100000, "desc": "当遭受致命伤害时自动抵消死亡一次并恢复至30%血量。", "effect": "revive"}
+    ]
+}

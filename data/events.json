@@ -1,0 +1,19 @@
+{
+  "zombie_world": [
+    {
+      "id": "survivor_rescue",
+      "text": "你发现了一个被丧尸包围的幸存者！",
+      "options": [
+        {"desc": "上前救援 (需要力量>=15)", "req_stat": "str", "req_val": 15, "success": {"text": "你展现了强大的力量，成功救下了幸存者，他给了你100积分作为报酬！", "reward_points": 100}, "fail": {"text": "你的力量不足以对抗丧尸群，受了点伤只能撤退！", "damage": 20}},
+        {"desc": "转身离开", "success": {"text": "你悄悄地离开了，什么都没发生。"}}
+      ]
+    },
+    {
+      "id": "supply_drop",
+      "text": "一个军方空投箱落在了附近！",
+      "options": [
+        {"desc": "去搜索物资", "success": {"text": "幸运地没有遇到其他轮回者，你找到了一些有用的物资！(恢复30生命和30精神)", "reward_heal": 30, "reward_mp": 30}}
+      ]
+    }
+  ]
+}

@@ -1,0 +1,31 @@
+{
+  "active": {
+    "berserk": {"name": "狂暴", "price": 1000, "mp_cost": 50, "desc": "陷入狂暴，大幅度提升攻击力，但降低防御", "effect": "atk_up"},
+    "heal": {"name": "治疗术", "price": 800, "mp_cost": 40, "desc": "恢复100点生命值", "effect": "heal_100"},
+    "fireball": {"name": "大火球术", "price": 1200, "mp_cost": 60, "desc": "发射一枚炽热的火球，造成火焰伤害", "effect": "dmg_fire"},
+    "ice_spike": {"name": "冰锥穿刺", "price": 1300, "mp_cost": 55, "desc": "召唤锐利的冰锥，附带减速效果", "effect": "dmg_ice"},
+    "thunder_strike": {"name": "落雷术", "price": 1500, "mp_cost": 75, "desc": "召唤九天玄雷，造成毁灭性的单体打击", "effect": "dmg_lightning"},
+    "assassinate": {"name": "背刺暗杀", "price": 1800, "mp_cost": 45, "desc": "寻找敌人弱点，基于敏捷造成高额爆发伤害", "effect": "dmg_physical_high"},
+    "shield_wall": {"name": "绝对屏障", "price": 1400, "mp_cost": 60, "desc": "生成魔法护盾，极大提升接下来的防御力", "effect": "def_up"},
+    "shadow_step": {"name": "暗影步", "price": 2000, "mp_cost": 80, "desc": "潜入暗影，极大提升闪避并准备下一次致命打击", "effect": "dodge_up_extreme"},
+    "holy_light": {"name": "圣光洗礼", "price": 2500, "mp_cost": 120, "desc": "高级治疗法术，恢复大量生命并清除负面状态", "effect": "heal_huge"},
+    "cursed_blood": {"name": "血魔诅咒", "price": 2200, "mp_cost": 30, "desc": "消耗自身生命值，对敌人造成真实伤害", "effect": "dmg_true_blood"},
+    "whirlwind": {"name": "剑刃风暴", "price": 3000, "mp_cost": 150, "desc": "化作绞肉机，对所有敌人造成群体物理伤害", "effect": "aoe_physical"},
+    "meteor": {"name": "天降陨石", "price": 5000, "mp_cost": 300, "desc": "禁咒级魔法，造成毁天灭地的范围火焰物理混合伤害", "effect": "aoe_meteor"},
+    "dragon_breath": {"name": "巨龙吐息", "price": 3500, "mp_cost": 180, "desc": "模拟巨龙喷发烈焰，附带灼烧效果", "effect": "dmg_fire_dot"},
+    "energy_shield": {"name": "法力护盾", "price": 1800, "mp_cost": 100, "desc": "用魔力替代生命承受伤害", "effect": "mana_shield"},
+    "blade_dance": {"name": "无极剑舞", "price": 4000, "mp_cost": 200, "desc": "瞬间斩出数剑，造成多次高倍率物理伤害", "effect": "dmg_multi_hit"}
+  },
+  "passive": {
+    "battle_instinct": {"name": "战斗直觉", "price": 2000, "desc": "在生死搏杀中锻炼出的直觉，全面提高闪避率", "effect": "dodge_up"},
+    "iron_skin": {"name": "金钟罩铁布衫", "price": 1500, "desc": "武林绝学，永久提升基础防御力", "effect": "passive_def_up"},
+    "mana_regeneration": {"name": "魔力涌泉", "price": 2500, "desc": "沟通元素界，战斗中每回合自动恢复法力", "effect": "passive_mp_regen"},
+    "eagle_eye": {"name": "鹰眼视觉", "price": 1800, "desc": "看破一切虚妄，显著提升攻击暴击率", "effect": "passive_crit_up"},
+    "toughness": {"name": "比蒙血肉", "price": 3000, "desc": "肉体极大强化，永久提升最大生命值上限", "effect": "passive_hp_up"},
+    "swiftness": {"name": "风之优雅", "price": 2200, "desc": "身轻如燕，提升基础敏捷和战斗速度", "effect": "passive_agi_up"},
+    "counter_attack": {"name": "太极反击", "price": 3500, "desc": "借力打力，在受到近战物理攻击时有几率反击", "effect": "passive_counter"},
+    "vampiric_touch": {"name": "血族渴望", "price": 4000, "desc": "每次对敌人造成伤害，都能汲取其生命反哺自身", "effect": "passive_lifesteal"},
+    "magic_mastery": {"name": "大魔导师精通", "price": 4500, "desc": "深刻理解魔法奥秘，所有法术技能威力提升", "effect": "passive_magic_dmg_up"},
+    "sixth_sense": {"name": "自在极意(伪)", "price": 8000, "desc": "肉体本能闪避，无视部分必中攻击，闪避率达到恐怖的地步", "effect": "passive_dodge_extreme"}
+  }
+}

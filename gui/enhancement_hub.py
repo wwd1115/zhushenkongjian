@@ -88,6 +88,7 @@ class EnhancementRenderer:
                 can_p = False; break
         return self.colors["purchasable"] if (can_p or not node.parent_ids) else self.colors["locked"]
 
+    def draw_all(self):
         self.canvas.delete("all")
         self.canvas.create_rectangle(0, 0, self.width, self.height, fill=self.colors["bg"], outline="")
         
@@ -152,7 +153,8 @@ class EnhancementRenderer:
             if cost != "":
                 self.canvas.create_text(nx, ny+10, text=f"💎 {cost}", fill="#eab308", font=("Consolas", 8), tags=(f"node_{node.id}",))
 
-        self.draw_god_sphere(cx, cy)
+        # Re-draw god sphere and stat panel so they are on top
+        self.draw_god_sphere(cx, cy - self.height/2 + 60)
         self.draw_stat_panel()
 
     def draw_god_sphere(self, cx, cy):

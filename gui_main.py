@@ -132,7 +132,6 @@ class GUI(ctk.CTk):
         self.mainloop()
 
     def run_game_logic(self):
-        # 替换 display 模块的实现以接入 GUI
         import utils.display as disp
         disp.set_gui_mode(self)
 

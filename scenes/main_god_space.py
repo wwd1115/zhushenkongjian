@@ -90,7 +90,6 @@ class MainGodSpace:
             template = random.choice(TEMPLATES)
             seed = random.randint(10000, 99999)
             prefix = random.Random(seed).choice(template.name_prefixes)
-            # Make the multiplier slightly more punishing for early game balance
             mult = max(1.0, (self.player.level * 0.9))
             options[str(idx + 1)] = f"【未知探测】: {prefix} 的世界 (基础难度倍率: {mult:.1f}x)"
             world_map[str(idx + 1)] = (template, seed)
@@ -111,7 +110,6 @@ class MainGodSpace:
             return
 
         def get_stat_cost(stat_key, current_val):
-            # 增加基础强化消耗，从100提升至150，并增加指数倍率，使得后期强化更加昂贵，增加平衡性挑战
             base = 150
             if current_val <= 10: return base
             return int(base + math.pow(current_val - 10, 1.6) * 20)
@@ -313,8 +311,8 @@ class MainGodSpace:
             print_info("花费积分，主神将为你随机抽取当前等级的装备（包含上万种词条组合）！")
             print_info(f"当前积分: {self.player.points}")
             
-            cost_normal = 400 + self.player.level * 80  # Increased for balance
-            cost_premium = 1200 + self.player.level * 150 # Increased for balance
+            cost_normal = 400 + self.player.level * 80
+            cost_premium = 1200 + self.player.level * 150
             
             options = {
                 "1": f"普通盲盒 (保底精良，小概率稀有或史诗) - {cost_normal}积分",
@@ -324,14 +322,11 @@ class MainGodSpace:
             
             choice = show_menu("抽取你的命运", options)
             if choice == "0": break
-
-            from utils.equipment_gen import generate_equipment
-            import random
             
             if choice == "1":
-                self._process_gacha(cost_normal, ["精良", "稀有", "史诗"], [92, 75, 0]) # Slight nerf to drop rates
+                self._process_gacha(cost_normal, ["精良", "稀有", "史诗"], [92, 75, 0])
             elif choice == "2":
-                self._process_gacha(cost_premium, ["稀有", "史诗", "传说"], [97, 65, 0]) # Slight nerf to drop rates
+                self._process_gacha(cost_premium, ["稀有", "史诗", "传说"], [97, 65, 0])
 
     def _process_gacha(self, cost, qualities, thresholds):
         import random
@@ -345,7 +340,7 @@ class MainGodSpace:
             q = qualities[0]
             if r > thresholds[0]: q = qualities[2]
             elif r > thresholds[1]: q = qualities[1]
-            elif r < 15 and qualities[0] == "精良": q = "白板" # slightly higher chance for white from normal
+            elif r < 15 and qualities[0] == "精良": q = "白板"
             
             eq = generate_equipment(self.player.level, specific_quality=q)
             self.player.inventory.append(eq)

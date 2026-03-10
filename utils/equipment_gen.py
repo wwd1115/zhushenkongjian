@@ -64,7 +64,7 @@ def generate_equipment(player_level, difficulty=1.0, specific_quality=None):
         max_val = int(eq.level_req * float(cfg["attr_factor"][1]))
         eq.attributes[attr] = max(1, random.randint(min_val, max_val))
         
-    # 6. 生成特殊效果 (Added new effects like 暴伤增加, 真实伤害)
+    # 6. 生成特殊效果
     effect_pool = [
         {"name": "火焰附加", "min": 5, "max": 25, "suffix": "of Fire"},
         {"name": "寒冰附加", "min": 5, "max": 25, "suffix": "of Frost"},
@@ -76,10 +76,10 @@ def generate_equipment(player_level, difficulty=1.0, specific_quality=None):
         {"name": "法力护盾", "min": 5, "max": 20, "suffix": "of Mana"},
         {"name": "经验加成", "min": 5, "max": 30, "suffix": "of Wisdom"},
         {"name": "暴击率提升", "min": 1, "max": 10, "suffix": "of Strikes"},
-        {"name": "暴伤增加", "min": 10, "max": 50, "suffix": "of Brutality"}, # NEW
+        {"name": "暴伤增加", "min": 10, "max": 50, "suffix": "of Brutality"},
         {"name": "闪避率提升", "min": 1, "max": 10, "suffix": "of Evasion"},
         {"name": "伤害反射", "min": 5, "max": 25, "suffix": "of Thorns"},
-        {"name": "真实伤害", "min": 10, "max": 40, "suffix": "of Truth"}, # NEW
+        {"name": "真实伤害", "min": 10, "max": 40, "suffix": "of Truth"},
         {"name": "破甲", "min": 5, "max": 20, "suffix": "of Piercing"},
         {"name": "速度爆发", "min": 2, "max": 8, "suffix": "of Haste"},
         {"name": "坚韧不拔", "min": 10, "max": 40, "suffix": "of Fortitude"},
@@ -127,7 +127,6 @@ def generate_equipment(player_level, difficulty=1.0, specific_quality=None):
         "desc": eq.desc,
         "special_effects": eq.special_effects
     }
-    # 混入attributes到根层级保持兼容老代码
     for k, v in eq.attributes.items():
         dict_repr[k] = v
         

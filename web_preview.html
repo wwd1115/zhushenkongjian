@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>主神空间 - 网页预览版</title>
+    <style>
+        :root {
+            --bg-color: #0d1117;
+            --text-color: #c9d1d9;
+            --primary-color: #58a6ff;
+            --success-color: #2ea043;
+            --warning-color: #d29922;
+            --error-color: #f85149;
+            --panel-bg: #161b22;
+            --border-color: #30363d;
+        }
+
+        body {
+            font-family: 'Consolas', 'Courier New', monospace;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        #game-container {
+            width: 100%;
+            max-width: 800px;
+            background-color: var(--panel-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+            display: flex;
+            flex-direction: column;
+            height: 90vh;
+            overflow: hidden;
+        }
+
+        #header {
+            padding: 15px 20px;
+            border-bottom: 1px solid var(--border-color);
+            text-align: center;
+            font-weight: bold;
+            font-size: 1.2em;
+            color: var(--primary-color);
+            background: linear-gradient(180deg, rgba(88,166,255,0.1) 0%, transparent 100%);
+        }
+
+        #output {
+            flex-grow: 1;
+            padding: 20px;
+            overflow-y: auto;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .line { animation: fadeIn 0.3s ease-in; }
+        .info { color: var(--text-color); }
+        .success { color: var(--success-color); }
+        .warning { color: var(--warning-color); }
+        .error { color: var(--error-color); }
+        .header-line { color: var(--primary-color); font-weight: bold; margin-top: 15px; border-bottom: 1px dashed var(--border-color); padding-bottom: 5px;}
+
+        #input-area {
+            padding: 15px 20px;
+            border-top: 1px solid var(--border-color);
+            background-color: rgba(0,0,0,0.2);
+        }
+
+        #options-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        button {
+            background-color: var(--panel-bg);
+            color: var(--primary-color);
+            border: 1px solid var(--border-color);
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 1em;
+            text-align: left;
+            transition: all 0.2s;
+        }
+
+        button:hover {
+            background-color: var(--border-color);
+            color: #fff;
+            transform: translateY(-1px);
+        }
+
+        button:active {
+            transform: translateY(1px);
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* 滚动条美化 */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: var(--bg-color); }
+        ::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #4b535d; }
+    </style>
+</head>
+<body>
+
+<div id="game-container">
+    <div id="header">主神空间 - 无限轮回</div>
+    <div id="output"></div>
+    <div id="input-area">
+        <div id="options-container"></div>
+    </div>
+</div>
+
+<script>
+    const outputDiv = document.getElementById('output');
+    const optionsContainer = document.getElementById('options-container');
+
+    // 玩家数据模型
+    let player = {
+        name: "",
+        level: 1,
+        points: 1000,
+        hp: 100, max_hp: 100,
+        mp: 50, max_mp: 50,
+        str: 10, agi: 10, int: 10, con: 10, per: 10, cha: 10,
+        updateStats: function() {
+            this.max_hp = this.con * 10 + this.level * 5;
+            this.max_mp = this.int * 8 + this.level * 3;
+            if (this.hp > this.max_hp) this.hp = this.max_hp;
+            if (this.mp > this.max_mp) this.mp = this.max_mp;
+        }
+    };
+
+    // 打印函数
+    function printText(text, type = 'info') {
+        const div = document.createElement('div');
+        div.className = `line ${type}`;
+        
+        if (type === 'header-line') {
+            div.textContent = `=== ${text} ===`;
+        } else {
+            div.textContent = text;
+        }
+        
+        outputDiv.appendChild(div);
+        outputDiv.scrollTop = outputDiv.scrollHeight;
+    }
+
+    function clearScreen() {
+        outputDiv.innerHTML = '';
+        optionsContainer.innerHTML = '';
+    }
+
+    // 显示选项菜单
+    function showOptions(optionsArray) {
+        optionsContainer.innerHTML = '';
+        optionsArray.forEach(opt => {
+            const btn = document.createElement('button');
+            btn.textContent = `[${opt.key}] ${opt.text}`;
+            btn.onclick = () => {
+                printText(`> 选择: ${opt.text}`, 'info');
+                opt.action();
+            };
+            optionsContainer.appendChild(btn);
+        });
+    }
+
+    // 等待一段时间（模拟终端sleep）
+    function sleep(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    // 游戏流程控制 ========================================
+
+    async function startMenu() {
+        clearScreen();
+        printText("主神空间 - 无限轮回", "header-line");
+        printText("欢迎来到主神空间...", "info");
+        await sleep(500);
+        
+        showOptions([
+            { key: "1", text: "开始新游戏", action: createCharacter },
+            { key: "2", text: "关于", action: () => { 
+                printText("这是一个基于你提供的主神空间规则编写的网页版文字剧情演示。", "warning");
+                setTimeout(startMenu, 2000);
+            }}
+        ]);
+    }
+
+    async function createCharacter() {
+        clearScreen();
+        printText("创建角色", "header-line");
+        
+        optionsContainer.innerHTML = '';
+        const inputDiv = document.createElement('div');
+        inputDiv.style.display = 'flex';
+        inputDiv.style.gap = '10px';
+        
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.placeholder = '请输入轮回者的名字...';
+        input.style.padding = '10px';
+        input.style.flexGrow = '1';
+        input.style.backgroundColor = 'var(--bg-color)';
+        input.style.color = 'var(--text-color)';
+        input.style.border = '1px solid var(--border-color)';
+        input.style.borderRadius = '4px';
+        
+        const btn = document.createElement('button');
+        btn.textContent = '确认';
+        btn.onclick = async () => {
+            player.name = input.value || "轮回者一号";
+            player.updateStats();
+            player.hp = player.max_hp;
+            player.mp = player.max_mp;
+            printText(`角色创建成功！欢迎你，${player.name}。`, "success");
+            await sleep(1000);
+            godSpaceMenu();
+        };
+        
+        inputDiv.appendChild(input);
+        inputDiv.appendChild(btn);
+        optionsContainer.appendChild(inputDiv);
+        input.focus();
+    }
+
+    function printPlayerStatus() {
+        printText(`--- 轮回者: ${player.name} | Lv.${player.level} | 积分: ${player.points} ---`, 'info');
+        printText(`生命值: ${player.hp}/${player.max_hp}  精神力: ${player.mp}/${player.max_mp}`, 'info');
+        printText(`力量: ${player.str} | 敏捷: ${player.agi} | 智力: ${player.int} | 体质: ${player.con}`, 'info');
+    }
+
+    function godSpaceMenu() {
+        clearScreen();
+        printText("主神空间", "header-line");
+        printPlayerStatus();
+        printText("----------------------------------------", "info");
+
+        showOptions([
+            { key: "1", text: "进入任务大厅", action: taskHallMenu },
+            { key: "2", text: "进入强化大厅", action: enhanceHallMenu },
+            { key: "3", text: "进入兑换商城 (开发中)", action: () => { printText("兑换商城开发中...", "error"); setTimeout(godSpaceMenu, 1000); } },
+            { key: "4", text: "进入休息区 (开发中)", action: () => { printText("休息区开发中...", "error"); setTimeout(godSpaceMenu, 1000); } },
+            { key: "9", text: "返回主菜单", action: startMenu }
+        ]);
+    }
+
+    function enhanceHallMenu() {
+        clearScreen();
+        printText("强化大厅 (100积分/1点属性)", "header-line");
+        printText(`当前积分: ${player.points}`, "warning");
+        printText(`当前属性 - 力量:${player.str} 敏捷:${player.agi} 智力:${player.int} 体质:${player.con}`, "info");
+        
+        const enhance = (attrName, attrKey) => {
+            if (player.points >= 100) {
+                player.points -= 100;
+                player[attrKey] += 1;
+                player.updateStats();
+                printText(`强化成功！${attrName} +1。剩余积分: ${player.points}`, "success");
+            } else {
+                printText("积分不足以进行强化！", "error");
+            }
+            setTimeout(enhanceHallMenu, 1000);
+        };
+
+        showOptions([
+            { key: "1", text: "强化力量 (STR)", action: () => enhance('力量', 'str') },
+            { key: "2", text: "强化敏捷 (AGI)", action: () => enhance('敏捷', 'agi') },
+            { key: "3", text: "强化智力 (INT)", action: () => enhance('智力', 'int') },
+            { key: "4", text: "强化体质 (CON)", action: () => enhance('体质', 'con') },
+            { key: "0", text: "返回", action: godSpaceMenu }
+        ]);
+    }
+
+    async function taskHallMenu() {
+        clearScreen();
+        printText("任务大厅", "header-line");
+        
+        showOptions([
+            { key: "1", text: "新手世界: 丧尸末日 (难度: ★☆☆☆☆)", action: enterZombieWorld },
+            { key: "0", text: "返回主神空间", action: godSpaceMenu }
+        ]);
+    }
+
+    // 简单的新手探索 Demo
+    let daysSurvived = 0;
+    async function enterZombieWorld() {
+        daysSurvived = 0;
+        clearScreen();
+        printText("T病毒爆发 - 废土之旅", "header-line");
+        printText("背景：城市沦为废墟，到处都是游荡的丧尸。", "info");
+        printText("主线任务：生存3天", "warning");
+        await sleep(1500);
+        exploreDay();
+    }
+
+    function exploreDay() {
+        if (player.hp <= 0) {
+            clearScreen();
+            printText("你死在了废土中...", "error");
+            setTimeout(startMenu, 2000);
+            return;
+        }
+
+        if (daysSurvived >= 3) {
+            clearScreen();
+            printText("恭喜你存活了下来！完成主线任务，回归主神空间！", "success");
+            player.points += 500;
+            printText("获得积分: 500", "warning");
+            setTimeout(godSpaceMenu, 2000);
+            return;
+        }
+
+        clearScreen();
+        printText(`第 ${daysSurvived + 1} 天`, "header-line");
+        printText(`生命: ${player.hp}/${player.max_hp}`, "info");
+
+        showOptions([
+            { key: "1", text: "探索废弃超市", action: () => resolveEvent("超市") },
+            { key: "2", text: "寻找营地休息", action: () => resolveEvent("休息") },
+        ]);
+    }
+
+    async function resolveEvent(choice) {
+        optionsContainer.innerHTML = ''; // 禁用按钮
+        if (choice === "超市") {
+            printText("你进入了废弃超市...", "info");
+            await sleep(1000);
+            if (Math.random() > 0.5) {
+                printText("遭遇了一只丧尸！你进行了战斗...", "warning");
+                await sleep(1000);
+                let dmg = Math.floor(Math.random() * 20) + 10; // 10-30伤害
+                if (player.str > 15) {
+                    printText("你强大的力量轻易解决了它！得到50积分。", "success");
+                    player.points += 50;
+                } else {
+                    player.hp -= dmg;
+                    printText(`你拼死击杀了丧尸，但受了伤，扣除了 ${dmg} 点生命值。得到50积分。`, "error");
+                    player.points += 50;
+                }
+            } else {
+                printText("运气不错，你找到了一些食物！生命恢复20点。", "success");
+                player.hp = Math.min(player.max_hp, player.hp + 20);
+            }
+        } else {
+            printText("你找到了一个相对安全的地下室休息...", "info");
+            await sleep(1000);
+            player.hp = Math.min(player.max_hp, player.hp + 30);
+            printText("一夜无事，你恢复了30点生命。", "success");
+        }
+
+        daysSurvived++;
+        await sleep(1500);
+        exploreDay();
+    }
+
+    // 启动游戏
+    startMenu();
+
+</script>
+</body>
+</html>

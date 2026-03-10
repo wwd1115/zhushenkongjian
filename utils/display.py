@@ -1,4 +1,3 @@
-import os
 import sys
 import colorama
 from colorama import Fore, Back, Style
@@ -23,7 +22,11 @@ def clear_screen():
     if GUI_INSTANCE:
         GUI_INSTANCE.gui_clear()
     else:
-        os.system('cls' if os.name == 'nt' else 'clear')
+        # Use ANSI escape codes to clear the screen and move the cursor to the top-left
+        # \033[2J: clear the entire screen
+        # \033[H: move the cursor to the home position (top-left)
+        sys.stdout.write('\033[2J\033[H')
+        sys.stdout.flush()
 
 def print_header(title):
     text = f"=== {title} ==="

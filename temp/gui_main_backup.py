@@ -2,7 +2,6 @@ import customtkinter as ctk
 import queue
 import threading
 import sys
-import time
 
 # 设置主题
 ctk.set_appearance_mode("Dark")
@@ -13,7 +12,7 @@ class GUI(ctk.CTk):
         super().__init__()
         self.game = game
         self.title("主神空间 - 无限轮回")
-        self.geometry("950x650")
+        self.geometry("900x600")
 
         # 布局：左侧信息区，右侧控制区
         self.grid_columnconfigure(0, weight=3) # 左侧宽
@@ -26,18 +25,16 @@ class GUI(ctk.CTk):
         self.text_frame.grid_rowconfigure(0, weight=1)
         self.text_frame.grid_columnconfigure(0, weight=1)
 
-        self.textbox = ctk.CTkTextbox(self.text_frame, font=("Consolas", 15), wrap="word")
+        self.textbox = ctk.CTkTextbox(self.text_frame, font=("Consolas", 14), wrap="word")
         self.textbox.grid(row=0, column=0, sticky="nsew")
         self.textbox.configure(state="disabled") # 默认不可编辑
 
         # 配置颜色 tag
-        self.textbox.tag_config("red", foreground="#FF5555")
-        self.textbox.tag_config("green", foreground="#55FF55")
-        self.textbox.tag_config("cyan", foreground="#55FFFF")
-        self.textbox.tag_config("yellow", foreground="#FFFF55")
-        self.textbox.tag_config("white", foreground="#FFFFFF")
-        self.textbox.tag_config("orange", foreground="#FFAA00")
-        self.textbox.tag_config("magenta", foreground="#FF55FF")
+        self.textbox.tag_config("red", foreground="red")
+        self.textbox.tag_config("green", foreground="lightgreen")
+        self.textbox.tag_config("cyan", foreground="cyan")
+        self.textbox.tag_config("yellow", foreground="yellow")
+        self.textbox.tag_config("white", foreground="white")
 
         # --- 左侧战斗区 (默认隐藏) ---
         self.combat_frame = ctk.CTkFrame(self)
@@ -95,34 +92,23 @@ class GUI(ctk.CTk):
         self.fx_renderer = FXRenderer(self.fx_canvas)
 
         # --- 右侧侧边栏 (属性 & 按钮) ---
-        self.sidebar_frame = ctk.CTkFrame(self, width=280)
+        self.sidebar_frame = ctk.CTkFrame(self, width=250)
         self.sidebar_frame.grid(row=0, column=1, padx=10, pady=10, sticky="nsew")
         self.sidebar_frame.grid_columnconfigure(0, weight=1)
         self.sidebar_frame.grid_rowconfigure(1, weight=1) # 按钮区填充
 
-        self.status_label = ctk.CTkLabel(self.sidebar_frame, text="人物状态\n等待游戏开始...", font=("Microsoft YaHei", 13), justify="left")
+        self.status_label = ctk.CTkLabel(self.sidebar_frame, text="人物状态\n等待游戏开始...", font=("Microsoft YaHei", 12), justify="left")
         self.status_label.grid(row=0, column=0, padx=10, pady=10, sticky="nwe")
 
         self.buttons_frame = ctk.CTkScrollableFrame(self.sidebar_frame)
         self.buttons_frame.grid(row=1, column=0, padx=10, pady=10, sticky="nsew")
 
-        # 快捷键提示区
-        self.shortcut_label = ctk.CTkLabel(self.sidebar_frame, text="快捷键: [1-9]选择 [I]背包 [Esc]返回", font=("Microsoft YaHei", 10), text_color="gray")
-        self.shortcut_label.grid(row=2, column=0, pady=5)
-
         # 队列用于跨线程通信：游戏逻辑向主线程抛出请求
         self.event_queue = queue.Queue()
         self.input_queue = queue.Queue() # 用于将玩家的点击回传给游戏逻辑
 
-        self._last_click_time = 0
-        self._click_cooldown = 0.2
-        self._current_options = {}
-
         # 游戏引擎跑在独立线程，防止阻塞UI
         self.game_thread = threading.Thread(target=self.run_game_logic, daemon=True)
-
-        # Key bindings
-        self.bind("<Key>", self._on_key_press)
 
         # 定时器消费队列
         self.process_queue()
@@ -157,7 +143,6 @@ class GUI(ctk.CTk):
         self.textbox.see("end")
 
     def clear_buttons(self):
-        self._current_options = {}
         for widget in self.buttons_frame.winfo_children():
             widget.destroy()
 
@@ -165,19 +150,158 @@ class GUI(ctk.CTk):
         self.status_label.configure(text=text)
 
     def add_button(self, text, callback, val):
+        # Prevent text clipping by hiding default text, and packing a custom wrapping label inside it, or just relying on CTk word wrap if available
+        # According to CTk docs, we can try using standard left anchoring and removing height constraints.
         btn = ctk.CTkButton(self.buttons_frame, text=text, command=lambda v=val: callback(v),
                             anchor="w")
-        btn._text_label.configure(wraplength=220, justify="left")
+        btn._text_label.configure(wraplength=220, justify="left") # Force text wrapping if it exceeds sidebar width
         btn.pack(pady=5, padx=5, fill="x")
 
     def process_queue(self):
-        # Process at most 10 messages per frame to prevent UI freezing
-        msgs_processed = 0
         try:
-            while msgs_processed < 10:
+            while True:
                 msg = self.event_queue.get_nowait()
-                msgs_processed += 1
-                self._dispatch_msg(msg)
+                msg_type = msg.get("type")
+
+                try:
+                    if msg_type == "print":
+                        self.print_text(msg["text"], msg.get("color", "white"))
+                    elif msg_type == "clear":
+                        self.clear_text()
+                    elif msg_type == "menu":
+                        self.clear_buttons()
+                        options = msg["options"]
+                        for key, val in options.items():
+                            self.add_button(f"[{key}] {val}", self._on_button_click, key)
+                    elif msg_type == "update_status":
+                        self.update_sidebar(msg["text"])
+                    elif msg_type == "text_input":
+                        self.clear_buttons()
+                        # 弹出一个原生 CTk 对话框要求输入
+                        dialog = ctk.CTkInputDialog(text=msg.get("prompt", "请输入:"), title="系统提示")
+                        user_input = dialog.get_input()
+                        if user_input is None:
+                            # 取消时默认返回空字符串或者0
+                            user_input = ""
+                        self.input_queue.put(user_input)
+                    elif msg_type == "start_visual_combat":
+                        self.text_frame.grid_remove()
+                        if hasattr(self, 'map_frame'): self.map_frame.grid_remove()
+                        if hasattr(self, 'hub_frame'): self.hub_frame.grid_remove()
+                        if hasattr(self, 'inventory_frame'): self.inventory_frame.grid_remove()
+
+                        self.combat_frame.grid(row=0, column=0, padx=10, pady=10, sticky="nsew")
+                        self.combat_frame.tkraise()
+                        self.update_idletasks()
+
+                        w, h = self.canvas.winfo_width(), self.canvas.winfo_height()
+                        if w <= 1: w, h = 600, 600
+                        # Team data format: [{"id": "p1", "name": "Player", "hp": 100, "max_hp": 100}, ...]
+                        self.combat_renderer.setup_teams(w, h, msg["p_team"], msg["e_team"])
+                        self.is_in_combat = True
+                    elif msg_type == "end_visual_combat":
+                        self.combat_frame.grid_remove()
+                        self.is_in_combat = False
+
+                        if getattr(self, 'is_in_map', False):
+                            self.map_frame.grid(row=0, column=0, padx=10, pady=10, sticky="nsew")
+                            self.map_frame.tkraise()
+                        elif getattr(self, 'is_in_hub', False):
+                            self.hub_frame.grid(row=0, column=0, padx=10, pady=10, sticky="nsew")
+                            self.hub_frame.tkraise()
+                        elif getattr(self, 'is_in_inventory', False):
+                            self.inventory_frame.grid(row=0, column=0, padx=10, pady=10, sticky="nsew")
+                            self.inventory_frame.tkraise()
+                        else:
+                            self.text_frame.grid(row=0, column=0, padx=10, pady=10, sticky="nsew")
+                            self.text_frame.tkraise()
+                    elif msg_type == "start_enhancement_hub":
+                        self.text_frame.grid_remove()
+                        self.hub_frame.grid(row=0, column=0, padx=10, pady=10, sticky="nsew")
+                        self.update_idletasks()
+                        w, h = self.hub_canvas.winfo_width(), self.hub_canvas.winfo_height()
+                        if w <= 1: w, h = 600, 600
+
+                        def on_node_clicked(node_id, can_purchase):
+                            self.input_queue.put({"action": "node_click", "node_id": node_id, "can_purchase": can_purchase})
+                            self.clear_buttons()
+                            lbl = ctk.CTkLabel(self.buttons_frame, text="处理节点...")
+                            lbl.pack(pady=10)
+
+                        self.hub_renderer.setup(w, h, msg["nodes"], msg["unlocked"], on_node_clicked, msg.get("player_stats"))
+                        self.is_in_hub = True
+                    elif msg_type == "update_enhancement_hub":
+                        self.hub_renderer.update_unlocks(msg["unlocked"], msg.get("player_stats"))
+                    elif msg_type == "end_enhancement_hub":
+                        self.hub_frame.grid_remove()
+                        self.text_frame.grid(row=0, column=0, padx=10, pady=10, sticky="nsew")
+                        self.is_in_hub = False
+                    elif msg_type == "start_map_exploration":
+                        self.text_frame.grid_remove()
+                        self.hub_frame.grid_remove()
+                        self.inventory_frame.grid_remove()
+                        self.map_frame.grid_remove()
+
+                        # Show FX frame first
+                        self.fx_frame.grid(row=0, column=0, padx=10, pady=10, sticky="nsew")
+                        self.fx_frame.tkraise()
+                        self.update_idletasks()
+
+                        def launch_map(m_data=msg["map_data"], p_x=msg["player_x"], p_y=msg["player_y"]):
+                            self.fx_frame.grid_remove()
+                            self.map_frame.grid(row=0, column=0, padx=10, pady=10, sticky="nsew")
+                            self.update_idletasks()
+                            w, h = self.map_canvas.winfo_width(), self.map_canvas.winfo_height()
+                            if w <= 1: w, h = 600, 600
+
+                            def on_move_clicked(cx, cy):
+                                self.input_queue.put({"action": "move", "x": cx, "y": cy})
+                                self.clear_buttons()
+                                lbl = ctk.CTkLabel(self.buttons_frame, text="移动中...")
+                                lbl.pack(pady=10)
+
+                            self.map_renderer.setup(w, h, m_data, p_x, p_y, on_move_clicked)
+                            self.is_in_map = True
+
+                        self.fx_renderer.start_vortex(duration_ms=1500, on_complete=launch_map)
+                    elif msg_type == "update_map_pos":
+                        self.map_renderer.update_map(msg["map_data"])
+                        self.map_renderer.update_player_pos(msg["x"], msg["y"])
+                    elif msg_type == "end_map_exploration":
+                        self.map_frame.grid_remove()
+                        self.text_frame.grid(row=0, column=0, padx=10, pady=10, sticky="nsew")
+                        self.is_in_map = False
+                    elif msg_type == "start_visual_inventory":
+                        self.text_frame.grid_remove()
+                        self.inventory_frame.grid(row=0, column=0, padx=10, pady=10, sticky="nsew")
+                        self.update_idletasks()
+                        w, h = self.inv_canvas.winfo_width(), self.inv_canvas.winfo_height()
+                        if w <= 1: w, h = 600, 600
+
+                        def on_inv_action(action_id):
+                            self.input_queue.put({"action": action_id})
+                            self.clear_buttons()
+                            lbl = ctk.CTkLabel(self.buttons_frame, text="处理中...")
+                            lbl.pack(pady=10)
+
+                        self.inv_renderer.setup(w, h, msg["player_data"], on_inv_action)
+                        self.is_in_inventory = True
+                    elif msg_type == "update_visual_inventory":
+                        self.inv_renderer.update_data(msg["player_data"])
+                    elif msg_type == "end_visual_inventory":
+                        self.inventory_frame.grid_remove()
+                        self.text_frame.grid(row=0, column=0, padx=10, pady=10, sticky="nsew")
+                        self.is_in_inventory = False
+                    elif msg_type == "combat_event":
+                        self.combat_renderer.process_event(msg["event"])
+                except Exception as e:
+                    import traceback
+                    err_msg = traceback.format_exc()
+                    self.log_error(f"由于执行 {msg_type} 消息导致 GUI 错误:\n{err_msg}")
+                    if hasattr(self, 'text_frame'):
+                        self.text_frame.grid(row=0, column=0, padx=10, pady=10, sticky="nsew")
+                        self.text_frame.tkraise()
+                    self.print_text(f"[GUI 错误] 队列消息 '{msg_type}' 处理失败, 请查看 error_log.txt", "red")
         except queue.Empty:
             pass
 
@@ -199,137 +323,8 @@ class GUI(ctk.CTk):
 
         self.after(50, self.process_queue)
 
-    def _dispatch_msg(self, msg):
-        msg_type = msg.get("type")
-        try:
-            if msg_type == "print":
-                self.print_text(msg["text"], msg.get("color", "white"))
-            elif msg_type == "clear":
-                self.clear_text()
-            elif msg_type == "menu":
-                self.clear_buttons()
-                options = msg["options"]
-                self._current_options = options
-                for key, val in options.items():
-                    self.add_button(f"[{key}] {val}", self._on_button_click, key)
-            elif msg_type == "update_status":
-                self.update_sidebar(msg["text"])
-            elif msg_type == "text_input":
-                self.clear_buttons()
-                dialog = ctk.CTkInputDialog(text=msg.get("prompt", "请输入:"), title="系统提示")
-                user_input = dialog.get_input()
-                if user_input is None:
-                    user_input = ""
-                self.input_queue.put(user_input)
-            elif msg_type == "start_visual_combat":
-                self.text_frame.grid_remove()
-                if hasattr(self, 'map_frame'): self.map_frame.grid_remove()
-                if hasattr(self, 'hub_frame'): self.hub_frame.grid_remove()
-                if hasattr(self, 'inventory_frame'): self.inventory_frame.grid_remove()
-
-                self.combat_frame.grid(row=0, column=0, padx=10, pady=10, sticky="nsew")
-                self.combat_frame.tkraise()
-                self.update_idletasks()
-
-                w, h = self.canvas.winfo_width(), self.canvas.winfo_height()
-                if w <= 1: w, h = 600, 600
-                self.combat_renderer.setup_teams(w, h, msg["p_team"], msg["e_team"])
-                self.is_in_combat = True
-            elif msg_type == "end_visual_combat":
-                self.combat_frame.grid_remove()
-                self.is_in_combat = False
-
-                if getattr(self, 'is_in_map', False):
-                    self.map_frame.grid(row=0, column=0, padx=10, pady=10, sticky="nsew")
-                    self.map_frame.tkraise()
-                elif getattr(self, 'is_in_hub', False):
-                    self.hub_frame.grid(row=0, column=0, padx=10, pady=10, sticky="nsew")
-                    self.hub_frame.tkraise()
-                elif getattr(self, 'is_in_inventory', False):
-                    self.inventory_frame.grid(row=0, column=0, padx=10, pady=10, sticky="nsew")
-                    self.inventory_frame.tkraise()
-                else:
-                    self.text_frame.grid(row=0, column=0, padx=10, pady=10, sticky="nsew")
-                    self.text_frame.tkraise()
-            elif msg_type == "start_enhancement_hub":
-                self.text_frame.grid_remove()
-                self.hub_frame.grid(row=0, column=0, padx=10, pady=10, sticky="nsew")
-                self.update_idletasks()
-                w, h = self.hub_canvas.winfo_width(), self.hub_canvas.winfo_height()
-                if w <= 1: w, h = 600, 600
-
-                def on_node_clicked(node_id, can_purchase):
-                    self._on_button_click({"action": "node_click", "node_id": node_id, "can_purchase": can_purchase})
-
-                self.hub_renderer.setup(w, h, msg["nodes"], msg["unlocked"], on_node_clicked, msg.get("player_stats"))
-                self.is_in_hub = True
-            elif msg_type == "update_enhancement_hub":
-                self.hub_renderer.update_unlocks(msg["unlocked"], msg.get("player_stats"))
-            elif msg_type == "end_enhancement_hub":
-                self.hub_frame.grid_remove()
-                self.text_frame.grid(row=0, column=0, padx=10, pady=10, sticky="nsew")
-                self.is_in_hub = False
-            elif msg_type == "start_map_exploration":
-                self.text_frame.grid_remove()
-                self.hub_frame.grid_remove()
-                self.inventory_frame.grid_remove()
-                self.map_frame.grid_remove()
-
-                self.fx_frame.grid(row=0, column=0, padx=10, pady=10, sticky="nsew")
-                self.fx_frame.tkraise()
-                self.update_idletasks()
-
-                def launch_map(m_data=msg["map_data"], p_x=msg["player_x"], p_y=msg["player_y"]):
-                    self.fx_frame.grid_remove()
-                    self.map_frame.grid(row=0, column=0, padx=10, pady=10, sticky="nsew")
-                    self.update_idletasks()
-                    w, h = self.map_canvas.winfo_width(), self.map_canvas.winfo_height()
-                    if w <= 1: w, h = 600, 600
-
-                    def on_move_clicked(cx, cy):
-                        self._on_button_click({"action": "move", "x": cx, "y": cy})
-
-                    self.map_renderer.setup(w, h, m_data, p_x, p_y, on_move_clicked)
-                    self.is_in_map = True
-
-                self.fx_renderer.start_vortex(duration_ms=1500, on_complete=launch_map)
-            elif msg_type == "update_map_pos":
-                self.map_renderer.update_map(msg["map_data"])
-                self.map_renderer.update_player_pos(msg["x"], msg["y"])
-            elif msg_type == "end_map_exploration":
-                self.map_frame.grid_remove()
-                self.text_frame.grid(row=0, column=0, padx=10, pady=10, sticky="nsew")
-                self.is_in_map = False
-            elif msg_type == "start_visual_inventory":
-                self.text_frame.grid_remove()
-                self.inventory_frame.grid(row=0, column=0, padx=10, pady=10, sticky="nsew")
-                self.update_idletasks()
-                w, h = self.inv_canvas.winfo_width(), self.inv_canvas.winfo_height()
-                if w <= 1: w, h = 600, 600
-
-                def on_inv_action(action_id):
-                    self._on_button_click({"action": action_id})
-
-                self.inv_renderer.setup(w, h, msg["player_data"], on_inv_action)
-                self.is_in_inventory = True
-            elif msg_type == "update_visual_inventory":
-                self.inv_renderer.update_data(msg["player_data"])
-            elif msg_type == "end_visual_inventory":
-                self.inventory_frame.grid_remove()
-                self.text_frame.grid(row=0, column=0, padx=10, pady=10, sticky="nsew")
-                self.is_in_inventory = False
-            elif msg_type == "combat_event":
-                self.combat_renderer.process_event(msg["event"])
-        except Exception as e:
-            import traceback
-            err_msg = traceback.format_exc()
-            self.log_error(f"由于执行 {msg_type} 消息导致 GUI 错误:\n{err_msg}")
-            if hasattr(self, 'text_frame'):
-                self.text_frame.grid(row=0, column=0, padx=10, pady=10, sticky="nsew")
-                self.text_frame.tkraise()
-            self.print_text(f"[GUI 错误] 队列消息 '{msg_type}' 处理失败, 请查看 error_log.txt", "red")
-
     def log_error(self, message):
+        """将错误写入 error_log.txt"""
         import datetime
         try:
             with open("error_log.txt", "a", encoding="utf-8") as f:
@@ -337,40 +332,11 @@ class GUI(ctk.CTk):
         except:
             pass
 
-    def _on_key_press(self, event):
-        if not self._current_options and not self.is_in_hub and not self.is_in_inventory and not self.is_in_map:
-            return
-
-        key = event.char.upper()
-
-        # Numbers 1-9 for choices
-        if key in self._current_options:
-            self._on_button_click(key)
-            return
-
-        # "Enter" equivalent shortcuts for single-option confirmation
-        if event.keysym == "Return" and "ENTER" in self._current_options:
-            self._on_button_click("ENTER")
-            return
-
-        if event.keysym == "Escape" and "0" in self._current_options:
-            self._on_button_click("0")
-            return
-
-        # Global hotkey for Inventory if in main menu
-        if key == 'I' and "5" in self._current_options and "查看属性与背包" in self._current_options["5"]:
-            self._on_button_click("5")
-            return
-
     def _on_button_click(self, val):
-        current_time = time.time()
-        # Debounce to prevent double clicks causing game logic desync
-        if current_time - self._last_click_time < self._click_cooldown:
-            return
-        self._last_click_time = current_time
-
         self.input_queue.put(val)
+        # 点击后禁用按钮，防止连点
         self.clear_buttons()
+        # 显示加载状态
         lbl = ctk.CTkLabel(self.buttons_frame, text="处理中...")
         lbl.pack(pady=10)
 
@@ -386,6 +352,7 @@ class GUI(ctk.CTk):
 
     def gui_get_input(self, options=None, is_hub=False, is_map=False, is_inv=False):
         if options is None:
+            # 对话确认框
             options = {"ENTER": "继续 / 确认"}
 
         self.event_queue.put({"type": "menu", "options": options})
@@ -394,6 +361,7 @@ class GUI(ctk.CTk):
 
     def gui_get_text_input(self, prompt="请输入:"):
         self.event_queue.put({"type": "text_input", "prompt": prompt})
+        # 阻塞游戏线程等待文本
         return self.input_queue.get()
 
     def gui_start_visual_combat(self, p_team, e_team):

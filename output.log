@@ -1,0 +1,6 @@
+Traceback (most recent call last):
+  File "/app/main.py", line 8, in <module>
+    from gui_main import GUI
+  File "/app/gui_main.py", line 1, in <module>
+    import customtkinter as ctk
+ModuleNotFoundError: No module named 'customtkinter'

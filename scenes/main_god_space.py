@@ -74,16 +74,12 @@ class MainGodSpace:
         from data.world_templates import TEMPLATES
         from scenes.world_engine import ProceduralWorld
         
-        # 动态计算玩家总评分
         power_score = (self.player.str + self.player.agi + self.player.int + 
                        self.player.con + self.player.per)
                        
-        if power_score < 70:
-            difficulty = "新手"
-        elif power_score < 120:
-            difficulty = "进阶"
-        else:
-            difficulty = "精英"
+        if power_score < 70: difficulty = "新手"
+        elif power_score < 120: difficulty = "进阶"
+        else: difficulty = "精英"
             
         print_header(f"轮回之门 - 当前评价等级: {difficulty} (评分: {power_score})")
         print_info("主神为你揭开了无数个未知的时空锚点...")
@@ -93,14 +89,13 @@ class MainGodSpace:
         for idx in range(3):
             template = random.choice(TEMPLATES)
             seed = random.randint(10000, 99999)
-            
-            # Predict name for display
             prefix = random.Random(seed).choice(template.name_prefixes)
-            options[str(idx + 1)] = f"【未知探测】: {prefix} 的世界 (基础倍率: {(self.player.level * 0.8):.1f}x)"
+            # Make the multiplier slightly more punishing for early game balance
+            mult = max(1.0, (self.player.level * 0.9))
+            options[str(idx + 1)] = f"【未知探测】: {prefix} 的世界 (基础难度倍率: {mult:.1f}x)"
             world_map[str(idx + 1)] = (template, seed)
             
         options["0"] = "返回主神空间"
-        
         choice = show_menu("请选择穿越的裂隙（门后一切皆随机）", options)
         
         if choice in world_map:
@@ -116,10 +111,10 @@ class MainGodSpace:
             return
 
         def get_stat_cost(stat_key, current_val):
-            # 递增阶梯物价公式: 基础100 + (当前值-10)^1.5 * 15
-            base = 100
+            # 增加基础强化消耗，从100提升至150，并增加指数倍率，使得后期强化更加昂贵，增加平衡性挑战
+            base = 150
             if current_val <= 10: return base
-            return int(base + math.pow(current_val - 10, 1.5) * 15)
+            return int(base + math.pow(current_val - 10, 1.6) * 20)
 
         def get_batch_cost(stat_key, current_val, amount):
             total = 0
@@ -136,11 +131,24 @@ class MainGodSpace:
                 "points": self.player.points
             }
 
-        # Prepare Node Data (星图中不再有属性星球，属性移到了侧边栏)
+        nodes, unlocked = self._generate_enhancement_nodes()
+
+        GUI_INSTANCE.gui_start_enhancement_hub(nodes, unlocked, sync_stats())
+        GUI_INSTANCE.gui_update_status(f"强化大厅 | 极品积分: {self.player.points}")
+
+        while True:
+            response = GUI_INSTANCE.gui_get_input({"0": "返回空间"}, is_hub=True)
+            if response == "0": break
+
+            if isinstance(response, dict) and response.get("action") == "node_click":
+                self._handle_enhancement_click(response, nodes, unlocked, sync_stats, get_stat_cost, get_batch_cost)
+
+        GUI_INSTANCE.gui_end_enhancement_hub()
+
+    def _generate_enhancement_nodes(self):
         nodes = []
         unlocked = []
         
-        # 1. Bloodlines Root (血统变异节点)
         nodes.append({"id": "bl_root", "name": "核心血统树", "type": "category", "x": 0, "y": -140})
         unlocked.append("bl_root")
         
@@ -160,7 +168,6 @@ class MainGodSpace:
                     "data": {"bl_id": b_id, "level": lvl["level"], "cost": lvl["cost"], "lvl_idx": i, "bl_data": b_data},
                     "x": cx, "y": cy - 60 * (i + 1), "parents": [prev_id]
                 })
-                # Check unlock
                 if getattr(self.player, 'bloodline', None) and self.player.bloodline.get("name") == b_data["name"]:
                     my_lvl = self.player.bloodline.get("level")
                     my_idx = next((j for j, l in enumerate(b_data["levels"]) if l["level"] == my_lvl), -1)
@@ -168,7 +175,6 @@ class MainGodSpace:
                 prev_id = lvl_id
             b_idx += 1
 
-        # 2. Skills Root (技能图谱)
         nodes.append({"id": "skill_root", "name": "因果技能网", "type": "category", "x": 0, "y": 140})
         unlocked.append("skill_root")
         
@@ -192,212 +198,93 @@ class MainGodSpace:
             if any(ps.get("key") == s["key"] for ps in self.player.skills):
                 unlocked.append(n_id)
                 
-        # Draw Hub
-        GUI_INSTANCE.gui_start_enhancement_hub(nodes, unlocked, sync_stats())
-        GUI_INSTANCE.gui_update_status(f"强化大厅 | 极品积分: {self.player.points}")
-        
-        while True:
-            response = GUI_INSTANCE.gui_get_input({"0": "返回空间"}, is_hub=True)
-            if response == "0": break
-            
-            if isinstance(response, dict) and response.get("action") == "node_click":
-                node_id = response.get("node_id")
+        return nodes, unlocked
 
-                # Handling Stat Clicks (via Sidebar + Button)
-                if node_id.startswith("stat_"):
-                    stat_key = node_id.replace("stat_", "")
-                    curr_val = getattr(self.player, stat_key)
-                    unit_price = get_stat_cost(stat_key, curr_val)
-                    
-                    dialog_text = f"强化 {stat_key.upper()} (当前:{curr_val})\n每次进化消耗: {unit_price} 积分\n输入要强化的点数:"
-                    amount_str = GUI_INSTANCE.gui_get_text_input(dialog_text)
-                    try:
-                        amount = int(amount_str)
-                        if amount <= 0: continue
-                    except: continue
-                    
-                    total_cost = get_batch_cost(stat_key, curr_val, amount)
-                    if self.player.points < total_cost:
-                        affordable = 0; temp_cost = 0
-                        for i in range(1, amount + 1):
-                            next_c = get_stat_cost(stat_key, curr_val + i - 1)
-                            if temp_cost + next_c <= self.player.points:
-                                temp_cost += next_c; affordable = i
-                            else: break
-                        if affordable == 0:
-                            GUI_INSTANCE.gui_update_status("奖励点不足以进行哪怕一次本源强化！")
-                            continue
-                        amount, total_cost = affordable, temp_cost
-                    
-                    self.player.points -= total_cost
-                    self.player.stats["points_spent"] += total_cost
-                    setattr(self.player, stat_key, curr_val + amount)
-                    self.player.update_stats()
-                    GUI_INSTANCE.gui_update_enhancement_hub(unlocked, sync_stats())
-                    GUI_INSTANCE.gui_update_status(f"成功强化 {stat_key.upper()} (+{amount})！")
-                    continue
+    def _handle_enhancement_click(self, response, nodes, unlocked, sync_stats, get_stat_cost, get_batch_cost):
+        from utils.display import GUI_INSTANCE
+        node_id = response.get("node_id")
 
-                # Planet Nodes
-                node = next((n for n in nodes if n["id"] == node_id), None)
-                if not node or node["type"] in ["category", "bloodline_base"]: continue
-                if node_id in unlocked:
-                    GUI_INSTANCE.gui_update_status("已达成该项目。")
-                    continue
-                if not response.get("can_purchase"):
-                    GUI_INSTANCE.gui_update_status("前置条件未解锁。")
-                    continue
-                
-                cost = node["data"].get("cost", 0)
-                if self.player.points < cost:
-                    GUI_INSTANCE.gui_update_status(f"积分不足 (需{cost})")
-                    continue
-                    
-                if node["type"] == "skill":
-                    self.player.points -= cost
-                    self.player.stats["points_spent"] += cost
-                    self.player.skills.append(node["data"]["skill"])
-                    unlocked.append(node_id)
-                    GUI_INSTANCE.gui_update_enhancement_hub(unlocked, sync_stats())
-                    GUI_INSTANCE.gui_update_status(f"进化成功：获得 {node['name']}!")
-                    
-                elif node["type"] == "bloodline":
-                    bl_id = node["data"]["bl_id"]
-                    lvl_idx = node["data"]["lvl_idx"]
-                    bl_data = node["data"]["bl_data"]
-                    my_bl = getattr(self.player, 'bloodline', None)
-                    
-                    if my_bl and my_bl.get("id") != bl_id:
-                        GUI_INSTANCE.gui_update_status("体系冲突！您已拥有的血统排斥此次进化。")
-                        continue
-                        
-                    self.player.points -= cost
-                    self.player.stats["points_spent"] += cost
-                    new_bl = {"id": bl_id, "name": bl_data["name"], "level": node["data"]["level"]}
-                    # Apply permanent stat boost from bloodline level
-                    lvl_data = bl_data["levels"][lvl_idx]
-                    for sk, sv in lvl_data.get("stats", {}).items():
-                        self.player.stats[sk] = self.player.stats.get(sk, 0) + sv
-                    
-                    self.player.bloodline = new_bl
-                    self.player.update_stats()
-                    unlocked.append(node_id)
-                    GUI_INSTANCE.gui_update_enhancement_hub(unlocked, sync_stats())
-                    GUI_INSTANCE.gui_update_status(f"血统共鸣成功：{bl_data['name']} 进化至 {node['data']['level']}！")
+        if node_id.startswith("stat_"):
+            self._handle_stat_enhancement(node_id, sync_stats, get_stat_cost, get_batch_cost, unlocked)
+            return
 
-        GUI_INSTANCE.gui_end_enhancement_hub()
+        node = next((n for n in nodes if n["id"] == node_id), None)
+        if not node or node["type"] in ["category", "bloodline_base"]: return
+        if node_id in unlocked:
+            GUI_INSTANCE.gui_update_status("已达成该项目。")
+            return
+        if not response.get("can_purchase"):
+            GUI_INSTANCE.gui_update_status("前置条件未解锁。")
+            return
 
-    def learn_skills(self):
-        while True:
-            clear_screen()
-            print_header("技能学习")
-            print_info(f"当前积分: {self.player.points}")
+        cost = node["data"].get("cost", 0)
+        if self.player.points < cost:
+            GUI_INSTANCE.gui_update_status(f"积分不足 (需{cost})")
+            return
             
-            options = {}
-            idx = 1
-            skill_list = []
+        if node["type"] == "skill":
+            self.player.points -= cost
+            self.player.stats["points_spent"] += cost
+            self.player.skills.append(node["data"]["skill"])
+            unlocked.append(node_id)
+            GUI_INSTANCE.gui_update_enhancement_hub(unlocked, sync_stats())
+            GUI_INSTANCE.gui_update_status(f"进化成功：获得 {node['name']}!")
             
-            for key, val in self.skills_data.get("active", {}).items():
-                s = val.copy()
-                s["key"] = key
-                s["type"] = "active"
-                skill_list.append(s)
-                
-            for key, val in self.skills_data.get("passive", {}).items():
-                s = val.copy()
-                s["key"] = key
-                s["type"] = "passive"
-                skill_list.append(s)
-                
-            for s in skill_list:
-                options[str(idx)] = f"[{'主动' if s['type']=='active' else '被动'}] {s['name']} - {s.get('price', 0)}积分 ({s.get('desc', '')})"
-                idx += 1
-                
-            options["0"] = "返回"
+        elif node["type"] == "bloodline":
+            bl_id = node["data"]["bl_id"]
+            lvl_idx = node["data"]["lvl_idx"]
+            bl_data = node["data"]["bl_data"]
+            my_bl = getattr(self.player, 'bloodline', None)
             
-            choice = show_menu("选择要学习的技能", options)
-            if choice == "0":
-                break
-                
-            try:
-                choice_idx = int(choice) - 1
-                if 0 <= choice_idx < len(skill_list):
-                    selected_skill = skill_list[choice_idx]
-                    
-                    has_skill = any(s.get("key") == selected_skill["key"] for s in self.player.skills)
-                    if has_skill:
-                        print_error("你已经学习过这个技能了！")
-                        time.sleep(1.5)
-                        continue
-                        
-                    price = selected_skill.get('price', 99999)
-                    if self.player.points >= price:
-                        self.player.points -= price
-                        self.player.stats["points_spent"] += price
-                        self.player.skills.append(selected_skill)
-                        self.player.check_achievements()
-                        print_success(f"成功学习技能: {selected_skill['name']} !")
-                    else:
-                        print_error("积分不足！")
-                    time.sleep(1.5)
-            except ValueError:
-                pass
-
-    def enhance_equipment(self):
-        while True:
-            clear_screen()
-            print_header("强化装备")
-            print_info(f"当前积分: {self.player.points}")
-            wpn = self.player.equipment["weapon"]
-            arm = self.player.equipment["armor"]
-            
-            options = {}
-            if wpn:
-                lvl = wpn.get("enhance_level", 0)
-                cost = 500 * (lvl + 1)
-                options["1"] = f"强化武器 ({wpn['name']} +{lvl}) - 需要 {cost} 积分"
-            if arm:
-                lvl = arm.get("enhance_level", 0)
-                cost = 400 * (lvl + 1)
-                options["2"] = f"强化防具 ({arm['name']} +{lvl}) - 需要 {cost} 积分"
-            
-            options["0"] = "返回"
-            if not wpn and not arm:
-                print_error("你没有任何可以强化的装备！")
-                time.sleep(1.5)
+            if my_bl and my_bl.get("id") != bl_id:
+                GUI_INSTANCE.gui_update_status("体系冲突！您已拥有的血统排斥此次进化。")
                 return
                 
-            choice = show_menu("请选择要强化的装备", options)
-            if choice == "0":
-                break
-                
-            if choice == "1" and wpn:
-                lvl = wpn.get("enhance_level", 0)
-                cost = 500 * (lvl + 1)
-                if self.player.points >= cost:
-                    self.player.points -= cost
-                    self.player.stats["points_spent"] += cost
-                    wpn["enhance_level"] = lvl + 1
-                    wpn["attack"] = int(wpn["attack"] * 1.2) + 5
-                    self.player.update_stats()
-                    self.player.check_achievements()
-                    print_success(f"强化成功！{wpn['name']} 提升到了 +{lvl+1}！当前攻击加成: {wpn['attack']}")
-                else:
-                    print_error("积分不足！")
-                time.sleep(1.5)
-            elif choice == "2" and arm:
-                lvl = arm.get("enhance_level", 0)
-                cost = 400 * (lvl + 1)
-                if self.player.points >= cost:
-                    self.player.points -= cost
-                    self.player.stats["points_spent"] += cost
-                    arm["enhance_level"] = lvl + 1
-                    arm["defense"] = int(arm["defense"] * 1.2) + 2
-                    self.player.update_stats()
-                    self.player.check_achievements()
-                    print_success(f"强化成功！{arm['name']} 提升到了 +{lvl+1}！当前防御加成: {arm['defense']}")
-                else:
-                    print_error("积分不足！")
-                time.sleep(1.5)
+            self.player.points -= cost
+            self.player.stats["points_spent"] += cost
+            new_bl = {"id": bl_id, "name": bl_data["name"], "level": node["data"]["level"]}
+            lvl_data = bl_data["levels"][lvl_idx]
+            for sk, sv in lvl_data.get("stats", {}).items():
+                self.player.stats[sk] = self.player.stats.get(sk, 0) + sv
+            
+            self.player.bloodline = new_bl
+            self.player.update_stats()
+            unlocked.append(node_id)
+            GUI_INSTANCE.gui_update_enhancement_hub(unlocked, sync_stats())
+            GUI_INSTANCE.gui_update_status(f"血统共鸣成功：{bl_data['name']} 进化至 {node['data']['level']}！")
+
+    def _handle_stat_enhancement(self, node_id, sync_stats, get_stat_cost, get_batch_cost, unlocked):
+        from utils.display import GUI_INSTANCE
+        stat_key = node_id.replace("stat_", "")
+        curr_val = getattr(self.player, stat_key)
+        unit_price = get_stat_cost(stat_key, curr_val)
+
+        dialog_text = f"强化 {stat_key.upper()} (当前:{curr_val})\n每次进化消耗: {unit_price} 积分\n输入要强化的点数:"
+        amount_str = GUI_INSTANCE.gui_get_text_input(dialog_text)
+        try:
+            amount = int(amount_str)
+            if amount <= 0: return
+        except: return
+
+        total_cost = get_batch_cost(stat_key, curr_val, amount)
+        if self.player.points < total_cost:
+            affordable = 0; temp_cost = 0
+            for i in range(1, amount + 1):
+                next_c = get_stat_cost(stat_key, curr_val + i - 1)
+                if temp_cost + next_c <= self.player.points:
+                    temp_cost += next_c; affordable = i
+                else: break
+            if affordable == 0:
+                GUI_INSTANCE.gui_update_status("奖励点不足以进行哪怕一次本源强化！")
+                return
+            amount, total_cost = affordable, temp_cost
+
+        self.player.points -= total_cost
+        self.player.stats["points_spent"] += total_cost
+        setattr(self.player, stat_key, curr_val + amount)
+        self.player.update_stats()
+        GUI_INSTANCE.gui_update_enhancement_hub(unlocked, sync_stats())
+        GUI_INSTANCE.gui_update_status(f"成功强化 {stat_key.upper()} (+{amount})！")
 
     def shop(self):
         while True:
@@ -413,16 +300,11 @@ class MainGodSpace:
             }
             choice = show_menu("商品分类", options)
             
-            if choice == "0":
-                break
-            elif choice == "1":
-                self.buy_items("weapons")
-            elif choice == "2":
-                self.buy_items("armors")
-            elif choice == "3":
-                self.buy_items("consumables")
-            elif choice == "4":
-                self.buy_gacha()
+            if choice == "0": break
+            elif choice == "1": self.buy_items("weapons")
+            elif choice == "2": self.buy_items("armors")
+            elif choice == "3": self.buy_items("consumables")
+            elif choice == "4": self.buy_gacha()
 
     def buy_gacha(self):
         while True:
@@ -431,8 +313,8 @@ class MainGodSpace:
             print_info("花费积分，主神将为你随机抽取当前等级的装备（包含上万种词条组合）！")
             print_info(f"当前积分: {self.player.points}")
             
-            cost_normal = 300 + self.player.level * 50
-            cost_premium = 800 + self.player.level * 100
+            cost_normal = 400 + self.player.level * 80  # Increased for balance
+            cost_premium = 1200 + self.player.level * 150 # Increased for balance
             
             options = {
                 "1": f"普通盲盒 (保底精良，小概率稀有或史诗) - {cost_normal}积分",
@@ -441,222 +323,38 @@ class MainGodSpace:
             }
             
             choice = show_menu("抽取你的命运", options)
-            if choice == "0":
-                break
-                
+            if choice == "0": break
+
             from utils.equipment_gen import generate_equipment
             import random
             
             if choice == "1":
-                if self.player.points >= cost_normal:
-                    self.player.points -= cost_normal
-                    self.player.stats["points_spent"] += cost_normal
-                    
-                    r = random.randint(1, 100)
-                    q = "精良"
-                    if r > 90: q = "史诗"
-                    elif r > 70: q = "稀有"
-                    elif r < 10: q = "白板"
-                    
-                    eq = generate_equipment(self.player.level, specific_quality=q)
-                    self.player.inventory.append(eq)
-                    print_success(f"抽取成功！获得了: {eq['name']}")
-                    print_info(f"属性: {eq['desc']}")
-                    time.sleep(2.5)
-                else:
-                    print_error("积分不足！")
-                    time.sleep(1)
-                    
+                self._process_gacha(cost_normal, ["精良", "稀有", "史诗"], [92, 75, 0]) # Slight nerf to drop rates
             elif choice == "2":
-                if self.player.points >= cost_premium:
-                    self.player.points -= cost_premium
-                    self.player.stats["points_spent"] += cost_premium
-                    
-                    r = random.randint(1, 100)
-                    q = "稀有"
-                    if r > 95: q = "传说"
-                    elif r > 60: q = "史诗"
-                    
-                    eq = generate_equipment(self.player.level, specific_quality=q)
-                    self.player.inventory.append(eq)
-                    print_success(f"🎉 高级抽取成功！获得了极品装备: {eq['name']}")
-                    print_info(f"属性: {eq['desc']}")
-                    time.sleep(2.5)
-                else:
-                    print_error("积分不足！")
-                    time.sleep(1)
+                self._process_gacha(cost_premium, ["稀有", "史诗", "传说"], [97, 65, 0]) # Slight nerf to drop rates
 
-    def buy_bloodline(self):
-        while True:
-            clear_screen()
-            print_header("血统强化中心")
-            print_info(f"当前积分: {self.player.points}")
-            
-            bloodlines = self.shop_data.get("bloodlines", {})
-            options = {}
-            idx = 1
-            b_list = list(bloodlines.values())
-            for b in b_list:
-                options[str(idx)] = f"{b['name']} ({b['desc']})"
-                idx += 1
-            options["0"] = "返回"
-            
-            choice = show_menu("请选择要查看的血统", options)
-            if choice == "0": break
-            
-            try:
-                c_idx = int(choice) - 1
-                if 0 <= c_idx < len(b_list):
-                    self.view_bloodline_levels(b_list[c_idx])
-            except ValueError:
-                pass
+    def _process_gacha(self, cost, qualities, thresholds):
+        import random
+        from utils.equipment_gen import generate_equipment
 
-    def view_bloodline_levels(self, bg_data):
-        while True:
-            clear_screen()
-            print_header(f"血统 - {bg_data['name']}")
-            print_info(bg_data['desc'])
+        if self.player.points >= cost:
+            self.player.points -= cost
+            self.player.stats["points_spent"] += cost
             
-            current_level_idx = -1
-            if getattr(self.player, 'bloodline', None) and self.player.bloodline.get("name") == bg_data["name"]:
-                for i, lvl in enumerate(bg_data["levels"]):
-                    if lvl["level"] == self.player.bloodline.get("level"):
-                        current_level_idx = i
-                        break
-            elif getattr(self.player, 'bloodline', None):
-                print_error(f"你当前已经拥有了【{self.player.bloodline['name']}】血统，无法兼并在其他体系中！")
-                time.sleep(2)
-                return
+            r = random.randint(1, 100)
+            q = qualities[0]
+            if r > thresholds[0]: q = qualities[2]
+            elif r > thresholds[1]: q = qualities[1]
+            elif r < 15 and qualities[0] == "精良": q = "白板" # slightly higher chance for white from normal
             
-            options = {}
-            for i, lvl in enumerate(bg_data["levels"]):
-                status = "未解锁"
-                if i < current_level_idx + 1:
-                    status = "已拥有"
-                elif i == current_level_idx + 1:
-                    status = "可购买"
-                else:
-                    status = "需前置"
-                    
-                options[str(i+1)] = f"[{status}] {lvl['level']} - {lvl['cost']}积分"
-                
-            options["0"] = "返回"
-            choice = show_menu("选择层级", options)
-            if choice == "0": break
-            
-            try:
-                c_idx = int(choice) - 1
-                if 0 <= c_idx < len(bg_data["levels"]):
-                    if c_idx <= current_level_idx:
-                        print_error("你已经拥有该级别或更高级别了！")
-                        time.sleep(1)
-                    elif c_idx > current_level_idx + 1:
-                        print_error("需要先购买前置级别的血统！")
-                        time.sleep(1)
-                    else:
-                        lvl_data = bg_data["levels"][c_idx]
-                        if self.player.points >= lvl_data["cost"]:
-                            self.player.points -= lvl_data["cost"]
-                            self.player.stats["points_spent"] += lvl_data["cost"]
-                            new_bl = bg_data.copy()
-                            del new_bl["levels"]
-                            new_bl["level"] = lvl_data["level"]
-                            new_bl["stats"] = lvl_data["stats"]
-                            new_bl["effects"] = lvl_data["effects"]
-                            
-                            self.player.bloodline = new_bl
-                            self.player.update_stats()
-                            print_success(f"成功强化【{bg_data['name']}】至 {lvl_data['level']} ！")
-                            time.sleep(1.5)
-                        else:
-                            print_error("积分不足！")
-                            time.sleep(1)
-            except ValueError:
-                pass
-
-    def buy_cultivation(self):
-        while True:
-            clear_screen()
-            print_header("修真与功法楼")
-            print_info(f"当前积分: {self.player.points}")
-            
-            cultivations = self.shop_data.get("cultivation", {})
-            options = {}
-            idx = 1
-            c_list = list(cultivations.values())
-            for c in c_list:
-                options[str(idx)] = f"{c['name']} ({c['desc']})"
-                idx += 1
-            options["0"] = "返回"
-            
-            choice = show_menu("请选择要结印的主修功法", options)
-            if choice == "0": break
-            
-            try:
-                c_idx = int(choice) - 1
-                if 0 <= c_idx < len(c_list):
-                    self.view_cultivation_levels(c_list[c_idx])
-            except ValueError:
-                pass
-
-    def view_cultivation_levels(self, cg_data):
-        while True:
-            clear_screen()
-            print_header(f"功法 - {cg_data['name']}")
-            print_info(cg_data['desc'])
-            
-            current_level_idx = -1
-            if getattr(self.player, 'cultivation', None) and self.player.cultivation.get("name") == cg_data["name"]:
-                for i, lvl in enumerate(cg_data["levels"]):
-                    if lvl["level"] == self.player.cultivation.get("level"):
-                        current_level_idx = i
-                        break
-            elif getattr(self.player, 'cultivation', None):
-                print_error(f"你当前已经主修了【{self.player.cultivation['name']}】，废功重修将导致走火入魔！(暂不支持)")
-                time.sleep(2)
-                return
-            
-            options = {}
-            for i, lvl in enumerate(cg_data["levels"]):
-                status = "未解锁"
-                if i < current_level_idx + 1: status = "已拥有"
-                elif i == current_level_idx + 1: status = "可购买"
-                else: status = "需前置"
-                options[str(i+1)] = f"[{status}] {lvl['level']} - {lvl['cost']}积分"
-                
-            options["0"] = "返回"
-            choice = show_menu("选择突破境界", options)
-            if choice == "0": break
-            
-            try:
-                c_idx = int(choice) - 1
-                if 0 <= c_idx < len(cg_data["levels"]):
-                    if c_idx <= current_level_idx:
-                        print_warning("此境界你已经突破了。")
-                        time.sleep(1)
-                    elif c_idx > current_level_idx + 1:
-                        print_error("修真讲究循序渐进，不可跨界突破！")
-                        time.sleep(1)
-                    else:
-                        lvl_data = cg_data["levels"][c_idx]
-                        if self.player.points >= lvl_data["cost"]:
-                            self.player.points -= lvl_data["cost"]
-                            self.player.stats["points_spent"] += lvl_data["cost"]
-                            new_cu = cg_data.copy()
-                            del new_cu["levels"]
-                            new_cu["level"] = lvl_data["level"]
-                            new_cu["stats"] = lvl_data["stats"]
-                            new_cu["effects"] = lvl_data.get("effects", [])
-                            
-                            self.player.cultivation = new_cu
-                            self.player.update_stats()
-                            print_success(f"成功突破【{cg_data['name']}】至 {lvl_data['level']} ！体会浩瀚神威。")
-                            time.sleep(1.5)
-                        else:
-                            print_error("积分不足！")
-                            time.sleep(1)
-            except ValueError:
-                pass
+            eq = generate_equipment(self.player.level, specific_quality=q)
+            self.player.inventory.append(eq)
+            print_success(f"抽取成功！获得了: {eq['name']}")
+            print_info(f"属性: {eq['desc']}")
+            time.sleep(2.5)
+        else:
+            print_error("积分不足！")
+            time.sleep(1)
 
     def buy_items(self, category):
         while True:
@@ -672,8 +370,7 @@ class MainGodSpace:
             options["0"] = "返回"
             
             choice = show_menu("请选择要购买的物品", options)
-            if choice == "0":
-                break
+            if choice == "0": break
                 
             try:
                 choice_idx = int(choice) - 1
@@ -732,93 +429,85 @@ class MainGodSpace:
             time.sleep(1.5)
             return
 
-        def get_player_data():
-            p = self.player
-            eq = p.equipment
-            
-            return {
-                "name": p.name,
-                "level": p.level,
-                "hp": p.hp, "max_hp": p.max_hp,
-                "mp": p.mp, "max_mp": p.max_mp,
-                "str": p.str, "agi": p.agi, "int": p.int,
-                "con": p.con, "per": p.per, "cha": p.cha,
-                "points": p.points, "free_stats": p.free_stats,
-                "equipment": {
-                    "weapon": eq.get("weapon"),
-                    "armor": eq.get("armor"),
-                    "accessory": eq.get("accessory")
-                },
-                "inventory": p.inventory
-            }
-
-        GUI_INSTANCE.gui_start_visual_inventory(get_player_data())
+        GUI_INSTANCE.gui_start_visual_inventory(self._get_player_data_for_ui())
         GUI_INSTANCE.gui_update_status("背包管理器 | 查看属性详情与物品")
         
         while True:
             response = GUI_INSTANCE.gui_get_input({"0": "返回空间"}, is_hub=False)
-            if response == "0":
-                break
+            if response == "0": break
             elif isinstance(response, dict) and "action" in response:
-                action = response["action"]
-                parts = action.split("_", 1)
-                
-                if parts[0] == "equip":
-                    idx = int(parts[1])
-                    if 0 <= idx < len(self.player.inventory):
-                        item = self.player.inventory[idx]
-                        slot = item.get("type", "")
-                        if slot in ["weapon", "armor", "accessory"]:
-                            if self.player.level < item.get("level_req", 1):
-                                GUI_INSTANCE.gui_update_status(f"等级不足！需要Lv.{item.get('level_req', 1)}")
-                            else:
-                                old_item = self.player.equipment.get(slot)
-                                if old_item:
-                                    self.player.inventory.append(old_item)
-                                self.player.equipment[slot] = item
-                                self.player.inventory.remove(item)
-                                self.player.update_stats()
-                                GUI_INSTANCE.gui_update_status(f"已装备: {item['name']}")
-                
-                elif parts[0] == "unequip":
-                    slot = parts[1]
-                    if slot in self.player.equipment and self.player.equipment[slot]:
-                        item = self.player.equipment[slot]
-                        self.player.inventory.append(item)
-                        self.player.equipment[slot] = None
-                        self.player.update_stats()
-                        GUI_INSTANCE.gui_update_status(f"已卸下: {item['name']}")
-                
-                elif parts[0] == "drop":
-                    idx = int(parts[1])
-                    if 0 <= idx < len(self.player.inventory):
-                        item = self.player.inventory[idx]
-                        val = item.get('value', 50)
-                        self.player.points += val
-                        self.player.inventory.remove(item)
-                        GUI_INSTANCE.gui_update_status(f"已出售: {item['name']}, 获得 {val} 积分")
-                        
-                elif parts[0] == "use":
-                    idx = int(parts[1])
-                    if 0 <= idx < len(self.player.inventory):
-                        item = self.player.inventory[idx]
-                        if item.get("type", "") == "consumable":
-                            # Apply effects
-                            healed = 0
-                            restored = 0
-                            if "heal" in item:
-                                healed = item["heal"]
-                                self.player.heal(healed)
-                            if "restore_mp" in item:
-                                restored = item["restore_mp"]
-                                self.player.restore_mp(restored)
-                            self.player.inventory.remove(item)
-                            GUI_INSTANCE.gui_update_status(f"使用了: {item['name']} (恢复了生命 {healed}, 精神 {restored})")
-
-                # Update UI
-                GUI_INSTANCE.gui_update_visual_inventory(get_player_data())
+                self._handle_inventory_action(response["action"])
+                GUI_INSTANCE.gui_update_visual_inventory(self._get_player_data_for_ui())
 
         GUI_INSTANCE.gui_end_visual_inventory()
+
+    def _get_player_data_for_ui(self):
+        p = self.player
+        eq = p.equipment
+        return {
+            "name": p.name, "level": p.level,
+            "hp": p.hp, "max_hp": p.max_hp,
+            "mp": p.mp, "max_mp": p.max_mp,
+            "str": p.str, "agi": p.agi, "int": p.int,
+            "con": p.con, "per": p.per, "cha": p.cha,
+            "points": p.points, "free_stats": p.free_stats,
+            "equipment": {
+                "weapon": eq.get("weapon"),
+                "armor": eq.get("armor"),
+                "accessory": eq.get("accessory")
+            },
+            "inventory": p.inventory
+        }
+
+    def _handle_inventory_action(self, action):
+        from utils.display import GUI_INSTANCE
+        parts = action.split("_", 1)
+
+        if parts[0] == "equip":
+            idx = int(parts[1])
+            if 0 <= idx < len(self.player.inventory):
+                item = self.player.inventory[idx]
+                slot = item.get("type", "")
+                if slot in ["weapon", "armor", "accessory"]:
+                    if self.player.level < item.get("level_req", 1):
+                        GUI_INSTANCE.gui_update_status(f"等级不足！需要Lv.{item.get('level_req', 1)}")
+                    else:
+                        old_item = self.player.equipment.get(slot)
+                        if old_item: self.player.inventory.append(old_item)
+                        self.player.equipment[slot] = item
+                        self.player.inventory.remove(item)
+                        self.player.update_stats()
+                        GUI_INSTANCE.gui_update_status(f"已装备: {item['name']}")
+
+        elif parts[0] == "unequip":
+            slot = parts[1]
+            if slot in self.player.equipment and self.player.equipment[slot]:
+                item = self.player.equipment[slot]
+                self.player.inventory.append(item)
+                self.player.equipment[slot] = None
+                self.player.update_stats()
+                GUI_INSTANCE.gui_update_status(f"已卸下: {item['name']}")
+
+        elif parts[0] == "drop":
+            idx = int(parts[1])
+            if 0 <= idx < len(self.player.inventory):
+                item = self.player.inventory[idx]
+                val = item.get('value', 50)
+                self.player.points += val
+                self.player.inventory.remove(item)
+                GUI_INSTANCE.gui_update_status(f"已出售: {item['name']}, 获得 {val} 积分")
+
+        elif parts[0] == "use":
+            idx = int(parts[1])
+            if 0 <= idx < len(self.player.inventory):
+                item = self.player.inventory[idx]
+                if item.get("type", "") == "consumable":
+                    healed = item.get("heal", 0)
+                    restored = item.get("restore_mp", 0)
+                    if healed: self.player.heal(healed)
+                    if restored: self.player.restore_mp(restored)
+                    self.player.inventory.remove(item)
+                    GUI_INSTANCE.gui_update_status(f"使用了: {item['name']} (恢复了生命 {healed}, 精神 {restored})")
 
     def view_achievements(self):
         clear_screen()

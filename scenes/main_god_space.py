@@ -166,7 +166,7 @@ class MainGodSpace:
                     "data": {"bl_id": b_id, "level": lvl["level"], "cost": lvl["cost"], "lvl_idx": i, "bl_data": b_data},
                     "x": cx, "y": cy - 60 * (i + 1), "parents": [prev_id]
                 })
-                if getattr(self.player, 'bloodline', None) and self.player.bloodline.get("name") == b_data["name"]:
+                if getattr(self.player, 'bloodline', None) and self.player.bloodline and isinstance(self.player.bloodline, dict) and self.player.bloodline.get("name") == b_data["name"]:
                     my_lvl = self.player.bloodline.get("level")
                     my_idx = next((j for j, l in enumerate(b_data["levels"]) if l["level"] == my_lvl), -1)
                     if i <= my_idx: unlocked.append(lvl_id)
@@ -184,7 +184,7 @@ class MainGodSpace:
             
         for i, s in enumerate(skills):
             cost = s.get("price", 500)
-            n_id = f"skill_{s['key']}"
+            n_id = f"skill_{s.get('key', str(i))}"
             r = 160
             ang = (i / max(1, len(skills))) * 3.1415 * 2
             nx = int(math.cos(ang) * r)
@@ -193,7 +193,7 @@ class MainGodSpace:
                 "id": n_id, "name": f"{s['name']}\\n({cost})", "type": "skill",
                 "data": {"skill": s, "cost": cost}, "x": nx, "y": ny, "parents": ["skill_root"]
             })
-            if any(ps.get("key") == s["key"] for ps in self.player.skills):
+            if any(ps.get("key") == s.get("key") for ps in self.player.skills):
                 unlocked.append(n_id)
                 
         return nodes, unlocked
@@ -234,7 +234,7 @@ class MainGodSpace:
             bl_data = node["data"]["bl_data"]
             my_bl = getattr(self.player, 'bloodline', None)
             
-            if my_bl and my_bl.get("id") != bl_id:
+            if my_bl and isinstance(my_bl, dict) and my_bl.get("id") != bl_id:
                 GUI_INSTANCE.gui_update_status("体系冲突！您已拥有的血统排斥此次进化。")
                 return
                 

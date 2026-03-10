@@ -1,7 +1,6 @@
 import customtkinter as ctk
 import queue
 import threading
-import sys
 import time
 
 # 设置主题

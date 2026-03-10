@@ -86,17 +86,21 @@ class CombatSystem:
             
             # 计算经验和掉落加成特效
             exp_multi = 1.0
+            points_multi = 1.0
             all_effs = get_all_special_effects(self.player)
             for eff in all_effs:
                 if eff.get("name") == "经验加成":
                     exp_multi += float(eff.get("value", 0)) / 100.0
+                elif eff.get("name") == "金钱掉落":
+                    points_multi += float(eff.get("value", 0)) / 100.0
                             
             final_exp = int(float(total_exp) * exp_multi)
-            print_info(f"获得积分: {total_points}")
+            final_points = int(float(total_points) * points_multi)
+            print_info(f"获得积分: {final_points}")
             
             self.player.gain_exp(final_exp)
             
-            self.player.points += total_points
+            self.player.points += final_points
             self.player.stats["kills"] += len(self.enemies)
             self.player.check_achievements()
             
@@ -370,22 +374,37 @@ class CombatSystem:
 
         base_dmg = float(self.player.attack) * float(multiplier)
         is_crit = random.random() < float(self.player.crit_rate)
+
+        # Calculate crit damage multiplier from effects
+        crit_dmg_mult = 1.5
+        all_effs = get_all_special_effects(self.player)
+        for eff in all_effs:
+            if eff.get("name") == "暴伤增加":
+                crit_dmg_mult += float(eff.get("value", 0)) / 100.0
+
         if is_crit:
-            base_dmg = float(base_dmg) * 1.5
+            base_dmg = float(base_dmg) * crit_dmg_mult
             print_warning("⚡ 暴击！ ⚡")
             
         fire_dmg = 0
         frost_dmg = 0
         leech_pct = 0
-        all_effs = get_all_special_effects(self.player)
+        true_dmg = 0
+
         for eff in all_effs:
-            if eff.get("name") == "火焰附加伤害": fire_dmg += int(eff.get("value", 0))
-            elif eff.get("name") == "寒冰附加伤害": frost_dmg += int(eff.get("value", 0))
-            elif eff.get("name") == "吸血": leech_pct += int(eff.get("value", 0))
+            if eff.get("name") == "火焰附加": fire_dmg += int(eff.get("value", 0))
+            elif eff.get("name") == "寒冰附加": frost_dmg += int(eff.get("value", 0))
+            elif eff.get("name") == "真实伤害": true_dmg += int(eff.get("value", 0))
+            elif eff.get("name") == "生命吸取" or eff.get("name") == "吸血": leech_pct += int(eff.get("value", 0))
                     
         total_dmg = int(float(base_dmg) + float(fire_dmg) + float(frost_dmg))
         dmg_dealt = target.take_damage(total_dmg)
         
+        # Add true damage after armor reduction
+        if true_dmg > 0:
+            target.hp = max(0, target.hp - true_dmg)
+            dmg_dealt += true_dmg
+
         if GUI_INSTANCE:
             GUI_INSTANCE.gui_combat_event({
                 "type": "hit", "target": target.actor_id, "damage": dmg_dealt, 
@@ -395,10 +414,13 @@ class CombatSystem:
                 GUI_INSTANCE.gui_combat_event({"type": "text", "target": target.actor_id, "text": f"🔥+{fire_dmg}", "color": "orange"})
             if frost_dmg > 0:
                 GUI_INSTANCE.gui_combat_event({"type": "text", "target": target.actor_id, "text": f"❄️+{frost_dmg}", "color": "cyan"})
+            if true_dmg > 0:
+                GUI_INSTANCE.gui_combat_event({"type": "text", "target": target.actor_id, "text": f"⚔️+{true_dmg}", "color": "yellow"})
         
         msg = f"你对 {target.name} 造成了 {dmg_dealt} 点总伤害！"
         if fire_dmg > 0: msg += f" (🔥火焰+{fire_dmg})"
         if frost_dmg > 0: msg += f" (❄️寒冰+{frost_dmg})"
+        if true_dmg > 0: msg += f" (⚔️真实+{true_dmg})"
         print_success(msg)
         
         if leech_pct > 0:
@@ -430,6 +452,15 @@ class CombatSystem:
             
         dmg_dealt = target.take_damage(int(base_dmg))
         
+        # Check for damage reflection
+        thorns_dmg = 0
+        if target == self.player:
+            all_effs = get_all_special_effects(self.player)
+            for eff in all_effs:
+                if eff.get("name") == "伤害反射":
+                    thorns_pct = int(eff.get("value", 0))
+                    thorns_dmg += max(1, int(dmg_dealt * (thorns_pct / 100.0)))
+
         if GUI_INSTANCE:
             GUI_INSTANCE.gui_combat_event({
                 "type": "hit", "target": target.actor_id, "damage": dmg_dealt, 
@@ -437,4 +468,11 @@ class CombatSystem:
             })
             
         print_error(f"{enemy.name} 攻击了 {target.name}，造成了 {dmg_dealt} 点伤害！")
+
+        if thorns_dmg > 0:
+            enemy.take_damage(thorns_dmg)
+            if GUI_INSTANCE:
+                GUI_INSTANCE.gui_combat_event({"type": "hit", "target": enemy.actor_id, "damage": thorns_dmg, "hp": enemy.hp, "crit": False, "color": "magenta"})
+            print_warning(f"🛡️ 伤害反射！{enemy.name} 受到了 {thorns_dmg} 点反弹伤害！")
+
         time.sleep(0.4)

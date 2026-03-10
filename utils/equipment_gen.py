@@ -9,7 +9,7 @@ class Equipment:
         self.quality = ""       # "白板", "精良", "稀有", "史诗", "传说"
         self.level_req = 1
         self.attributes = {}    # {"str": 5, "agi": 3}
-        self.special_effects = [] # [{"name": "火焰附加伤害", "value": 10}]
+        self.special_effects = [] # [{"name": "火焰附加", "value": 10}]
         self.enhance_level = 0
         self.value = 0
         self.desc = ""
@@ -28,7 +28,7 @@ def generate_equipment(player_level, difficulty=1.0, specific_quality=None):
         
     # 2. 决定品质
     quality_keys = ["白板", "精良", "稀有", "史诗", "传说"]
-    quality_weights = [50, 30, 15, 4, 1]  # Use int weights to fix Pyre2 complaints
+    quality_weights = [50, 30, 15, 4, 1]
     if specific_quality and specific_quality in quality_keys:
         eq.quality = specific_quality
     else:
@@ -64,7 +64,7 @@ def generate_equipment(player_level, difficulty=1.0, specific_quality=None):
         max_val = int(eq.level_req * float(cfg["attr_factor"][1]))
         eq.attributes[attr] = max(1, random.randint(min_val, max_val))
         
-    # 6. 生成特殊效果
+    # 6. 生成特殊效果 (Added new effects like 暴伤增加, 真实伤害)
     effect_pool = [
         {"name": "火焰附加", "min": 5, "max": 25, "suffix": "of Fire"},
         {"name": "寒冰附加", "min": 5, "max": 25, "suffix": "of Frost"},
@@ -76,8 +76,10 @@ def generate_equipment(player_level, difficulty=1.0, specific_quality=None):
         {"name": "法力护盾", "min": 5, "max": 20, "suffix": "of Mana"},
         {"name": "经验加成", "min": 5, "max": 30, "suffix": "of Wisdom"},
         {"name": "暴击率提升", "min": 1, "max": 10, "suffix": "of Strikes"},
+        {"name": "暴伤增加", "min": 10, "max": 50, "suffix": "of Brutality"}, # NEW
         {"name": "闪避率提升", "min": 1, "max": 10, "suffix": "of Evasion"},
         {"name": "伤害反射", "min": 5, "max": 25, "suffix": "of Thorns"},
+        {"name": "真实伤害", "min": 10, "max": 40, "suffix": "of Truth"}, # NEW
         {"name": "破甲", "min": 5, "max": 20, "suffix": "of Piercing"},
         {"name": "速度爆发", "min": 2, "max": 8, "suffix": "of Haste"},
         {"name": "坚韧不拔", "min": 10, "max": 40, "suffix": "of Fortitude"},

@@ -405,9 +405,24 @@ class GUI(ctk.CTk):
         if options is None:
             options = {"ENTER": "继续 / 确认"}
 
+        # 清空积压的输入队列，防止连点/残留事件导致跳过当前菜单
+        while not self.input_queue.empty():
+            try:
+                self.input_queue.get_nowait()
+            except queue.Empty:
+                break
+
         self.event_queue.put({"type": "menu", "options": options, "is_event": is_event})
-        # 阻塞游戏线程，等待主线程 UI 队列返回结果
-        return self.input_queue.get()
+
+        # 阻塞游戏线程，等待有效输入
+        while True:
+            res = self.input_queue.get()
+
+            # 过滤非预期的地图移动事件
+            if isinstance(res, dict) and res.get("action") == "move" and not is_map:
+                continue
+
+            return res
 
     def gui_get_text_input(self, prompt="请输入:"):
         self.event_queue.put({"type": "text_input", "prompt": prompt})

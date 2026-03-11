@@ -329,7 +329,7 @@ class ProceduralWorld:
             
         # Re-render map to reflect cleared status if they survived
         if self.player.is_alive():
-            GUI_INSTANCE.gui_update_map_pos(self.map_data, self.player_x, self.player_y) # Update natively without redraw
+            GUI_INSTANCE.gui_update_map_pos(self.player_x, self.player_y, self.map_data) # Update natively without redraw
             
         # Check completion
         if q_type in ["survive", "kill", "explore"] and self.quest["current_value"] >= self.quest["target_value"]:

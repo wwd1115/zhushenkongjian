@@ -240,7 +240,7 @@ class ProceduralWorld:
                 GUI_INSTANCE.gui_print(f"💰 发现宝箱！\n积分 +{pts}\n从宝箱中开出了装备: 【{eq['name']}】!", "yellow")
                 self.player.inventory.append(eq)
                 # Force user to acknowledge the find in GUI
-                GUI_INSTANCE.gui_get_input({"0": "收起战利品"}, is_map=True)
+                GUI_INSTANCE.gui_get_input({"0": "收起战利品"}, is_event=True)
                 
             elif room["type"] == "event":
                 GUI_INSTANCE.gui_update_status("触发未知奇遇事件！")
@@ -248,7 +248,7 @@ class ProceduralWorld:
                 
                 if event_type == "chest":
                     GUI_INSTANCE.gui_print("🎁 你发现了一个隐藏的奇遇宝箱！散发着诱人的光芒。", "cyan")
-                    res = GUI_INSTANCE.gui_get_input({"1": "开启", "2": "无视并离开"}, is_map=True)
+                    res = GUI_INSTANCE.gui_get_input({"1": "开启", "2": "无视并离开"}, is_event=True)
                     if res == "1":
                         if self.rng.random() < 0.2:
                             dmg = self.player.max_hp // 4
@@ -260,14 +260,14 @@ class ProceduralWorld:
                             GUI_INSTANCE.gui_print(f"🎉 奇遇爆出极品装备：【{eq['name']}】！已放入背包。", "green")
                             self.player.inventory.append(eq)
                         room["cleared"] = True
-                        GUI_INSTANCE.gui_get_input({"0": "继续"}, is_map=True)
+                        GUI_INSTANCE.gui_get_input({"0": "继续"}, is_event=True)
                     else:
                         GUI_INSTANCE.gui_print("你小心翼翼地离开了。", "white")
                         room["cleared"] = True
                         
                 elif event_type == "shrine":
                     GUI_INSTANCE.gui_print("👼 你发现了一座古老的神龛。", "cyan")
-                    res = GUI_INSTANCE.gui_get_input({"1": "虔诚祈祷", "2": "暴力破坏获取能量", "3": "离开"}, is_map=True)
+                    res = GUI_INSTANCE.gui_get_input({"1": "虔诚祈祷", "2": "暴力破坏获取能量", "3": "离开"}, is_event=True)
                     if res == "1":
                         heal = self.player.max_hp // 2
                         self.player.heal(heal)
@@ -284,12 +284,12 @@ class ProceduralWorld:
                     else:
                         GUI_INSTANCE.gui_print("你默默走开了。", "white")
                     room["cleared"] = True
-                    GUI_INSTANCE.gui_get_input({"0": "继续"}, is_map=True)
+                    GUI_INSTANCE.gui_get_input({"0": "继续"}, is_event=True)
                     
                 elif event_type == "altar":
                     dmg = self.player.max_hp // 5
                     GUI_INSTANCE.gui_print(f"🩸 眼前是一个鲜血祭坛，祭祀需要大量生命力。", "magenta")
-                    res = GUI_INSTANCE.gui_get_input({"1": f"割腕献祭 (扣除{dmg}HP换取积分)", "2": "拒绝邪恶, 直接离开"}, is_map=True)
+                    res = GUI_INSTANCE.gui_get_input({"1": f"割腕献祭 (扣除{dmg}HP换取积分)", "2": "拒绝邪恶, 直接离开"}, is_event=True)
                     if res == "1":
                         self.player.take_damage(dmg)
                         if self.player.is_alive():
@@ -302,22 +302,22 @@ class ProceduralWorld:
                         GUI_INSTANCE.gui_print("你厌恶地离开了祭坛。", "white")
                     room["cleared"] = True
                     if self.player.is_alive():
-                        GUI_INSTANCE.gui_get_input({"0": "继续"}, is_map=True)
+                        GUI_INSTANCE.gui_get_input({"0": "继续"}, is_event=True)
                 elif event_type == "trap":
                     dmg = self.player.max_hp // 8
                     self.player.take_damage(dmg)
                     GUI_INSTANCE.gui_print(f"⚠️ 糟糕，你误入了古代陷阱！受到了 {dmg} 点真实穿透伤害！", "red")
                     room["cleared"] = True
                     if self.player.is_alive():
-                        GUI_INSTANCE.gui_get_input({"0": "继续"}, is_map=True)
+                        GUI_INSTANCE.gui_get_input({"0": "继续"}, is_event=True)
                 elif event_type == "merchant":
                     pts = self.rng.randint(100, 300)
                     GUI_INSTANCE.gui_print(f"🎒 你遇到了一个身穿黑袍的流浪商人。他递给你一个沉甸甸的钱袋（包含 {pts} 积分）后匆匆离去。", "yellow")
                     self.player.points += pts
-                    GUI_INSTANCE.gui_get_input({"0": "继续"}, is_map=True)
+                    GUI_INSTANCE.gui_get_input({"0": "继续"}, is_event=True)
                 else:
                     GUI_INSTANCE.gui_print("💨 这是一片空地，什么也没有发生，只有风吹过的声音。", "white")
-                    GUI_INSTANCE.gui_get_input({"0": "继续"}, is_map=True)
+                    GUI_INSTANCE.gui_get_input({"0": "继续"}, is_event=True)
                     
                 room["cleared"] = True
             elif room["type"] == "boss":

@@ -208,17 +208,17 @@ class GUI(ctk.CTk):
             elif msg_type == "menu":
                 self.clear_buttons()
                 options = msg["options"]
-                is_map = msg.get("is_map", False)
+                is_event = msg.get("is_event", False)
 
-                # During map exploration, force focus to text frame so dialog options are visible
-                if is_map:
+                # During map exploration events, force focus to text frame so dialog options are visible
+                if is_event:
                     self.map_frame.grid_remove()
                     self.text_frame.grid(row=0, column=0, padx=10, pady=10, sticky="nsew")
                     self.text_frame.tkraise()
 
                 self._current_options = options
                 for key, val in options.items():
-                    self.add_button(f"[{key}] {val}", lambda v=key, m=is_map: self._on_button_click(v, m), key)
+                    self.add_button(f"[{key}] {val}", lambda v=key, m=is_event: self._on_button_click(v, m), key)
             elif msg_type == "update_status":
                 self.update_sidebar(msg["text"])
             elif msg_type == "text_input":
@@ -398,11 +398,11 @@ class GUI(ctk.CTk):
     def gui_update_status(self, text):
         self.event_queue.put({"type": "update_status", "text": text})
 
-    def gui_get_input(self, options=None, is_hub=False, is_map=False, is_inv=False):
+    def gui_get_input(self, options=None, is_hub=False, is_map=False, is_inv=False, is_event=False):
         if options is None:
             options = {"ENTER": "继续 / 确认"}
 
-        self.event_queue.put({"type": "menu", "options": options, "is_map": is_map})
+        self.event_queue.put({"type": "menu", "options": options, "is_event": is_event})
         # 阻塞游戏线程，等待主线程 UI 队列返回结果
         return self.input_queue.get()
 

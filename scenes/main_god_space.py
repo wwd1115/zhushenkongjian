@@ -164,9 +164,9 @@ class MainGodSpace:
             for i, lvl in enumerate(b_data["levels"]):
                 lvl_id = f"bl_{b_id}_{i}"
                 nodes.append({
-                    "id": lvl_id, "name": f"{lvl['level']} ({lvl['cost']})", "type": "bloodline",
+                    "id": lvl_id, "name": f"{lvl['level']}", "type": "bloodline",
                     "data": {"bl_id": b_id, "level": lvl["level"], "cost": lvl["cost"], "lvl_idx": i, "bl_data": b_data},
-                    "x": cx, "y": cy - 60 * (i + 1), "parents": [prev_id]
+                    "x": cx, "y": cy, "parents": [prev_id]
                 })
                 if getattr(self.player, 'bloodline', None) and self.player.bloodline.get("name") == b_data["name"]:
                     my_lvl = self.player.bloodline.get("level")
@@ -191,9 +191,9 @@ class MainGodSpace:
             for i, lvl in enumerate(c_data["levels"]):
                 lvl_id = f"cult_{c_id}_{i}"
                 nodes.append({
-                    "id": lvl_id, "name": f"{lvl['level']} ({lvl['cost']})", "type": "cultivation",
+                    "id": lvl_id, "name": f"{lvl['level']}", "type": "cultivation",
                     "data": {"cult_id": c_id, "level": lvl["level"], "cost": lvl["cost"], "lvl_idx": i, "cult_data": c_data},
-                    "x": cx, "y": cy - 60 * (i + 1), "parents": [prev_id]
+                    "x": cx, "y": cy, "parents": [prev_id]
                 })
                 if getattr(self.player, 'cultivation', None) and self.player.cultivation.get("name") == c_data["name"]:
                     my_lvl = self.player.cultivation.get("level")
@@ -219,7 +219,7 @@ class MainGodSpace:
             nx = int(math.cos(ang) * r)
             ny = 140 + int(math.sin(ang) * r)
             nodes.append({
-                "id": n_id, "name": f"{s['name']}\\n({cost})", "type": "skill",
+                "id": n_id, "name": f"{s['name']}", "type": "skill",
                 "data": {"skill": s, "cost": cost}, "x": nx, "y": ny, "parents": ["skill_root"]
             })
             if any(ps.get("key") == s["key"] for ps in self.player.skills):

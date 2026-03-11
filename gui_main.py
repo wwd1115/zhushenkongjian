@@ -208,9 +208,17 @@ class GUI(ctk.CTk):
             elif msg_type == "menu":
                 self.clear_buttons()
                 options = msg["options"]
+                is_map = msg.get("is_map", False)
+
+                # During map exploration, force focus to text frame so dialog options are visible
+                if is_map:
+                    self.map_frame.grid_remove()
+                    self.text_frame.grid(row=0, column=0, padx=10, pady=10, sticky="nsew")
+                    self.text_frame.tkraise()
+
                 self._current_options = options
                 for key, val in options.items():
-                    self.add_button(f"[{key}] {val}", self._on_button_click, key)
+                    self.add_button(f"[{key}] {val}", lambda v=key, m=is_map: self._on_button_click(v, m), key)
             elif msg_type == "update_status":
                 self.update_sidebar(msg["text"])
             elif msg_type == "text_input":
@@ -361,7 +369,7 @@ class GUI(ctk.CTk):
             self._on_button_click("5")
             return
 
-    def _on_button_click(self, val):
+    def _on_button_click(self, val, return_to_map=False):
         current_time = time.time()
         # Debounce to prevent double clicks causing game logic desync
         if current_time - self._last_click_time < self._click_cooldown:
@@ -372,6 +380,13 @@ class GUI(ctk.CTk):
         self.clear_buttons()
         lbl = ctk.CTkLabel(self.buttons_frame, text="处理中...")
         lbl.pack(pady=10)
+
+        # If this was a map event dialog, return back to map view
+        if return_to_map:
+            self.text_frame.grid_remove()
+            self.map_frame.grid(row=0, column=0, padx=10, pady=10, sticky="nsew")
+            self.map_frame.tkraise()
+            self.update_idletasks()
 
     # 供游戏逻辑线程调用的接口
     def gui_print(self, text, color="white"):
@@ -387,7 +402,7 @@ class GUI(ctk.CTk):
         if options is None:
             options = {"ENTER": "继续 / 确认"}
 
-        self.event_queue.put({"type": "menu", "options": options})
+        self.event_queue.put({"type": "menu", "options": options, "is_map": is_map})
         # 阻塞游戏线程，等待主线程 UI 队列返回结果
         return self.input_queue.get()
 

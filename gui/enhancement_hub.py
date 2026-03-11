@@ -98,9 +98,22 @@ class EnhancementRenderer:
         for i in range(0, int(self.height), 60):
             self.canvas.create_line(0, i, self.width, i, fill=self.colors["grid"], dash=(2, 4))
         
-        # Override all node X/Y to form a clean double-column vertical list layout
-        bl_nodes = [n for n in self.nodes.values() if "bloodline" in n.content_type or n.name == "核心血统树"]
-        sk_nodes = [n for n in self.nodes.values() if n.content_type == "skill" or n.name == "因果技能网"]
+        # Helper to determine if a node should be visible
+        def is_visible(node):
+            if not node.parent_ids:
+                return True
+            for p_id in node.parent_ids:
+                p_node = self.nodes.get(p_id)
+                if p_node and p_node.is_unlocked:
+                    return True
+            return False
+
+        visible_nodes = [n for n in self.nodes.values() if is_visible(n)]
+
+        # Override all node X/Y to form a clean triple-column vertical list layout
+        bl_nodes = [n for n in visible_nodes if "bloodline" in n.content_type or n.name == "核心血统树"]
+        c_nodes = [n for n in visible_nodes if "cultivation" in n.content_type or n.name == "修真与功法"]
+        sk_nodes = [n for n in visible_nodes if n.content_type == "skill" or n.name == "因果技能网"]
         
         # Sort them basically by parent depth or name
         def layout_nodes(node_list, start_x, start_y):
@@ -111,8 +124,9 @@ class EnhancementRenderer:
                 y_offset += 80 # Vertical spacing
                 
         # We will dynamically override their x, y based on this list, ignoring the messy ones from main_god_space
-        layout_nodes(bl_nodes, -150, -self.height/2 + 80)
-        layout_nodes(sk_nodes, 150, -self.height/2 + 80)
+        layout_nodes(bl_nodes, -250, -self.height/2 + 80)
+        layout_nodes(c_nodes, 0, -self.height/2 + 80)
+        layout_nodes(sk_nodes, 250, -self.height/2 + 80)
         
         cx = self.width / 2 + self.cam_x
         cy = self.height / 2 + self.cam_y
@@ -121,16 +135,16 @@ class EnhancementRenderer:
         self.draw_god_sphere(cx, cy - self.height/2 + 60)
         
         # Connections (Only draw parent lines if they make sense now, or just vertical lines)
-        for node in self.nodes.values():
+        for node in visible_nodes:
             for p_id in node.parent_ids:
                 p_node = self.nodes.get(p_id)
-                if p_node:
+                if p_node and is_visible(p_node):
                     col = self.colors["unlocked"] if (node.is_unlocked and p_node.is_unlocked) else self.colors["locked"]
                     self.canvas.create_line(cx+p_node.x, cy+p_node.y, cx+node.x, cy+node.y, fill=col, width=2)
 
         # Draw Nodes as clean Tech Panels instead of Circles
         box_w, box_h = 60, 25
-        for node in self.nodes.values():
+        for node in visible_nodes:
             nx, ny = cx + node.x, cy + node.y
             col = self.get_color_for_node(node)
             
@@ -141,7 +155,10 @@ class EnhancementRenderer:
             node.ui_circle = self.canvas.create_rectangle(nx-box_w, ny-box_h, nx+box_w, ny+box_h, fill="#0f172a", outline=col, width=2, tags=(f"node_{node.id}",))
             
             # Content Icon + Name (Side-by-side or stacked inside box)
-            icon = "🧬" if "bloodline" in node.content_type else ("💡" if node.content_type == "skill" else "🔗")
+            if "bloodline" in node.content_type: icon = "🧬"
+            elif "cultivation" in node.content_type: icon = "☯️"
+            elif node.content_type == "skill": icon = "💡"
+            else: icon = "🔗"
             
             # Truncate very long names for the box
             display_name = node.name.replace("\\n", " ") # Remove explicit newlines if any

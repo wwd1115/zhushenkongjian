@@ -88,6 +88,7 @@ class EnhancementRenderer:
                 can_p = False; break
         return self.colors["purchasable"] if (can_p or not node.parent_ids) else self.colors["locked"]
 
+    def draw_all(self):
         self.canvas.delete("all")
         self.canvas.create_rectangle(0, 0, self.width, self.height, fill=self.colors["bg"], outline="")
         

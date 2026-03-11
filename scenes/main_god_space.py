@@ -175,6 +175,33 @@ class MainGodSpace:
                 prev_id = lvl_id
             b_idx += 1
 
+        # 解析修真功法
+        nodes.append({"id": "cult_root", "name": "修真与功法", "type": "category", "x": 0, "y": 0})
+        unlocked.append("cult_root")
+
+        c_idx = 0
+        for c_id, c_data in self.shop_data.get("cultivation", {}).items():
+            base_node_id = f"cult_{c_id}_base"
+            cx = (c_idx * 200) - 150
+            cy = -50
+            nodes.append({"id": base_node_id, "name": c_data["name"], "type": "cultivation_base", "x": cx, "y": cy, "parents": ["cult_root"]})
+            unlocked.append(base_node_id)
+
+            prev_id = base_node_id
+            for i, lvl in enumerate(c_data["levels"]):
+                lvl_id = f"cult_{c_id}_{i}"
+                nodes.append({
+                    "id": lvl_id, "name": f"{lvl['level']} ({lvl['cost']})", "type": "cultivation",
+                    "data": {"cult_id": c_id, "level": lvl["level"], "cost": lvl["cost"], "lvl_idx": i, "cult_data": c_data},
+                    "x": cx, "y": cy - 60 * (i + 1), "parents": [prev_id]
+                })
+                if getattr(self.player, 'cultivation', None) and self.player.cultivation.get("name") == c_data["name"]:
+                    my_lvl = self.player.cultivation.get("level")
+                    my_idx = next((j for j, l in enumerate(c_data["levels"]) if l["level"] == my_lvl), -1)
+                    if i <= my_idx: unlocked.append(lvl_id)
+                prev_id = lvl_id
+            c_idx += 1
+
         nodes.append({"id": "skill_root", "name": "因果技能网", "type": "category", "x": 0, "y": 140})
         unlocked.append("skill_root")
         
@@ -209,7 +236,7 @@ class MainGodSpace:
             return
 
         node = next((n for n in nodes if n["id"] == node_id), None)
-        if not node or node["type"] in ["category", "bloodline_base"]: return
+        if not node or node["type"] in ["category", "bloodline_base", "cultivation_base"]: return
         if node_id in unlocked:
             GUI_INSTANCE.gui_update_status("已达成该项目。")
             return
@@ -252,6 +279,29 @@ class MainGodSpace:
             unlocked.append(node_id)
             GUI_INSTANCE.gui_update_enhancement_hub(unlocked, sync_stats())
             GUI_INSTANCE.gui_update_status(f"血统共鸣成功：{bl_data['name']} 进化至 {node['data']['level']}！")
+
+        elif node["type"] == "cultivation":
+            c_id = node["data"]["cult_id"]
+            lvl_idx = node["data"]["lvl_idx"]
+            c_data = node["data"]["cult_data"]
+            my_c = getattr(self.player, 'cultivation', None)
+
+            if my_c and my_c.get("id") != c_id:
+                GUI_INSTANCE.gui_update_status("功法冲突！您已修炼的功法排斥此次进阶。")
+                return
+
+            self.player.points -= cost
+            self.player.stats["points_spent"] += cost
+            new_c = {"id": c_id, "name": c_data["name"], "level": node["data"]["level"]}
+            lvl_data = c_data["levels"][lvl_idx]
+            for sk, sv in lvl_data.get("stats", {}).items():
+                self.player.stats[sk] = self.player.stats.get(sk, 0) + sv
+
+            self.player.cultivation = new_c
+            self.player.update_stats()
+            unlocked.append(node_id)
+            GUI_INSTANCE.gui_update_enhancement_hub(unlocked, sync_stats())
+            GUI_INSTANCE.gui_update_status(f"功法突破成功：{c_data['name']} 修炼至 {node['data']['level']}！")
 
     def _handle_stat_enhancement(self, node_id, sync_stats, get_stat_cost, get_batch_cost, unlocked):
         from utils.display import GUI_INSTANCE

@@ -29,7 +29,10 @@ class ProceduralWorld:
         self.rng = random.Random(self.seed)
         
         # 动态难度计算
-        self.base_difficulty = max(0.5, (player_level * 0.8) + self.rng.uniform(0.5, 1.5))
+        if player_level <= 1:
+            self.base_difficulty = 0.6  # 严格限制新手关卡难度
+        else:
+            self.base_difficulty = max(0.5, (player_level * 0.8) + self.rng.uniform(0.5, 1.5))
         
         # 世界属性提取
         prefix = self.rng.choice(self.template.name_prefixes)
@@ -71,8 +74,17 @@ class ProceduralWorld:
             name = f"首领·{base_e['name']}" if is_boss else base_e["name"]
             
             # 乘以动态难度系数
-            mult = self.base_difficulty * (2.0 if is_boss else 1.0)
+            boss_mult = 2.0 if is_boss else 1.0
+            if self.player_level <= 1 and is_boss:
+                boss_mult = 1.2 # 新手期的 Boss 不能有2倍属性膨胀
+
+            mult = self.base_difficulty * boss_mult
+
             hp = int(base_e["hp"] * mult)
+            # 新手血量强制保护机制：防止出现700血怪物
+            if self.player_level <= 1 and hp > 150:
+                hp = 150
+
             atk = int(base_e["attack"] * mult)
             agi = int(base_e["agi"] * mult)
             df = int(base_e.get("defense", 0) * mult)
@@ -225,88 +237,89 @@ class ProceduralWorld:
                 room["cleared"] = True
                 from utils.equipment_gen import generate_equipment
                 eq = generate_equipment(self.player_level + 1)
-                print_success(f"💰 从宝箱中开出了装备: 【{eq['name']}】!")
+                GUI_INSTANCE.gui_print(f"💰 发现宝箱！\n积分 +{pts}\n从宝箱中开出了装备: 【{eq['name']}】!", "yellow")
                 self.player.inventory.append(eq)
-                # Force user to acknowledge the find
-                show_menu("获取宝物", {"0": "收起战利品"})
+                # Force user to acknowledge the find in GUI
+                GUI_INSTANCE.gui_get_input({"0": "收起战利品"}, is_map=True)
                 
             elif room["type"] == "event":
                 GUI_INSTANCE.gui_update_status("触发未知奇遇事件！")
                 event_type = self.rng.choice(["shrine", "altar", "chest", "trap", "merchant", "nothing"])
                 
                 if event_type == "chest":
-                    print_info("🎁 你发现了一个隐藏的奇遇宝箱！散发着诱人的光芒。")
-                    res = show_menu("奇遇宝箱", {"1": "开启", "2": "无视并离开"})
+                    GUI_INSTANCE.gui_print("🎁 你发现了一个隐藏的奇遇宝箱！散发着诱人的光芒。", "cyan")
+                    res = GUI_INSTANCE.gui_get_input({"1": "开启", "2": "无视并离开"}, is_map=True)
                     if res == "1":
                         if self.rng.random() < 0.2:
                             dmg = self.player.max_hp // 4
-                            print_error(f"这是一个宝箱怪！你被咬了一口，损失 {dmg} HP！")
+                            GUI_INSTANCE.gui_print(f"这是一个宝箱怪！你被咬了一口，损失 {dmg} HP！", "red")
                             self.player.take_damage(dmg)
                         else:
                             from utils.equipment_gen import generate_equipment
                             eq = generate_equipment(self.player_level + 3) # High tier loot
-                            print_success(f"🎉 奇遇爆出极品装备：【{eq['name']}】！已放入背包。")
+                            GUI_INSTANCE.gui_print(f"🎉 奇遇爆出极品装备：【{eq['name']}】！已放入背包。", "green")
                             self.player.inventory.append(eq)
                         room["cleared"] = True
-                        show_menu("奇遇结算", {"0": "继续"})
+                        GUI_INSTANCE.gui_get_input({"0": "继续"}, is_map=True)
                     else:
-                        print_info("你小心翼翼地离开了。")
+                        GUI_INSTANCE.gui_print("你小心翼翼地离开了。", "white")
                         room["cleared"] = True
                         
                 elif event_type == "shrine":
-                    print_info("👼 你发现了一座古老的神龛。")
-                    res = show_menu("古老神龛", {"1": "虔诚祈祷", "2": "暴力破坏获取能量", "3": "离开"})
+                    GUI_INSTANCE.gui_print("👼 你发现了一座古老的神龛。", "cyan")
+                    res = GUI_INSTANCE.gui_get_input({"1": "虔诚祈祷", "2": "暴力破坏获取能量", "3": "离开"}, is_map=True)
                     if res == "1":
                         heal = self.player.max_hp // 2
                         self.player.heal(heal)
-                        print_success(f"🕊️ 圣光拂过，你的伤势恢复了，生命 +{heal}！")
+                        GUI_INSTANCE.gui_print(f"🕊️ 圣光拂过，你的伤势恢复了，生命 +{heal}！", "green")
                     elif res == "2":
                         if self.rng.random() < 0.5:
                             pts = self.rng.randint(300, 800)
-                            print_warning(f"😈 神龛中涌出狂暴的能量，你吸收了它！积分+{pts}")
+                            GUI_INSTANCE.gui_print(f"😈 神龛中涌出狂暴的能量，你吸收了它！积分+{pts}", "yellow")
                             self.player.points += pts
                         else:
                             dmg = self.player.max_hp // 3
-                            print_error(f"💀 神明震怒！雷罚降临，你损失了 {dmg} 点生命值！")
+                            GUI_INSTANCE.gui_print(f"💀 神明震怒！雷罚降临，你损失了 {dmg} 点生命值！", "red")
                             self.player.take_damage(dmg)
                     else:
-                        print_info("你默默走开了。")
+                        GUI_INSTANCE.gui_print("你默默走开了。", "white")
                     room["cleared"] = True
-                    show_menu("奇遇结算", {"0": "继续"})
+                    GUI_INSTANCE.gui_get_input({"0": "继续"}, is_map=True)
                     
                 elif event_type == "altar":
                     dmg = self.player.max_hp // 5
-                    print_warning(f"🩸 眼前是一个鲜血祭坛，祭祀需要大量生命力。")
-                    res = show_menu("鲜血祭坛", {"1": f"割腕献祭 (扣除{dmg}HP换取积分)", "2": "拒绝邪恶, 直接离开"})
+                    GUI_INSTANCE.gui_print(f"🩸 眼前是一个鲜血祭坛，祭祀需要大量生命力。", "magenta")
+                    res = GUI_INSTANCE.gui_get_input({"1": f"割腕献祭 (扣除{dmg}HP换取积分)", "2": "拒绝邪恶, 直接离开"}, is_map=True)
                     if res == "1":
                         self.player.take_damage(dmg)
                         if self.player.is_alive():
                             pts = self.rng.randint(200, 500)
                             self.player.points += pts
-                            print_success(f"🩸 献祭成功！你的血液化为 {pts} 积分！")
+                            GUI_INSTANCE.gui_print(f"🩸 献祭成功！你的血液化为 {pts} 积分！", "yellow")
                         else:
-                            print_error("🩸 你的生命力不足以支撑献祭，你死在了祭坛上！")
+                            GUI_INSTANCE.gui_print("🩸 你的生命力不足以支撑献祭，你死在了祭坛上！", "red")
                     else:
-                        print_info("你厌恶地离开了祭坛。")
+                        GUI_INSTANCE.gui_print("你厌恶地离开了祭坛。", "white")
                     room["cleared"] = True
                     if self.player.is_alive():
-                        show_menu("奇遇结算", {"0": "继续"})
+                        GUI_INSTANCE.gui_get_input({"0": "继续"}, is_map=True)
                 elif event_type == "trap":
                     dmg = self.player.max_hp // 8
                     self.player.take_damage(dmg)
-                    print_error(f"⚠️ 糟糕，你误入了古代陷阱！受到了 {dmg} 点真实穿透伤害！")
+                    GUI_INSTANCE.gui_print(f"⚠️ 糟糕，你误入了古代陷阱！受到了 {dmg} 点真实穿透伤害！", "red")
                     room["cleared"] = True
                     if self.player.is_alive():
-                        show_menu("奇遇结算", {"0": "继续"})
+                        GUI_INSTANCE.gui_get_input({"0": "继续"}, is_map=True)
                 elif event_type == "merchant":
                     pts = self.rng.randint(100, 300)
-                    print_success(f"🎒 你遇到了一个身穿黑袍的流浪商人。他递给你一个沉甸甸的钱袋（包含 {pts} 积分）后匆匆离去。")
+                    GUI_INSTANCE.gui_print(f"🎒 你遇到了一个身穿黑袍的流浪商人。他递给你一个沉甸甸的钱袋（包含 {pts} 积分）后匆匆离去。", "yellow")
                     self.player.points += pts
+                    GUI_INSTANCE.gui_get_input({"0": "继续"}, is_map=True)
                 else:
-                    print_info("💨 这是一片空地，什么也没有发生，只有风吹过的声音。")
+                    GUI_INSTANCE.gui_print("💨 这是一片空地，什么也没有发生，只有风吹过的声音。", "white")
+                    GUI_INSTANCE.gui_get_input({"0": "继续"}, is_map=True)
                     
                 room["cleared"] = True
-                time.sleep(2.0)
             elif room["type"] == "boss":
                 GUI_INSTANCE.gui_update_status("🚨 遭遇关底 Boss！")
                 time.sleep(1.5)

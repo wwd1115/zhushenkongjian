@@ -422,6 +422,17 @@ class GUI(ctk.CTk):
             if isinstance(res, dict) and res.get("action") == "move" and not is_map:
                 continue
 
+            # 白名单过滤：如果期望的是普通选项，忽略所有不在 options 列表里的字符串输入 (如连点残留的旧按钮/键盘快捷键)
+            if isinstance(res, str) and res not in options:
+                # 记录幽灵输入日志
+                try:
+                    with open("error_log.txt", "a", encoding="utf-8") as f:
+                        import datetime
+                        f.write(f"\n[{datetime.datetime.now()}] 丢弃了无效或过期的菜单输入: '{res}', 当前期望的选项为: {list(options.keys())}\n")
+                except:
+                    pass
+                continue
+
             return res
 
     def gui_get_text_input(self, prompt="请输入:"):

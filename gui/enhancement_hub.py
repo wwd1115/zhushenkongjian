@@ -98,10 +98,17 @@ class EnhancementRenderer:
         for i in range(0, int(self.height), 60):
             self.canvas.create_line(0, i, self.width, i, fill=self.colors["grid"], dash=(2, 4))
         
+        cx = self.width / 2 + self.cam_x
+        cy = self.height / 2 + self.cam_y
+
         # Helper to determine if a node should be visible
         def is_visible(node):
-            if not node.parent_ids:
+            if node.type == "category":
+                return False # Hide arbitrary roots to save space
+
+            if not node.parent_ids or any("root" in pid for pid in node.parent_ids):
                 return True
+
             for p_id in node.parent_ids:
                 p_node = self.nodes.get(p_id)
                 if p_node and p_node.is_unlocked:
@@ -110,37 +117,67 @@ class EnhancementRenderer:
 
         visible_nodes = [n for n in self.nodes.values() if is_visible(n)]
 
-        # Override all node X/Y to form a clean triple-column vertical list layout
-        bl_nodes = [n for n in visible_nodes if "bloodline" in n.content_type or n.name == "核心血统树"]
-        c_nodes = [n for n in visible_nodes if "cultivation" in n.content_type or n.name == "修真与功法"]
-        sk_nodes = [n for n in visible_nodes if n.content_type == "skill" or n.name == "因果技能网"]
+        # Group nodes
+        bl_bases = [n for n in visible_nodes if n.type == "bloodline_base"]
+        c_bases = [n for n in visible_nodes if n.type == "cultivation_base"]
+        skills = [n for n in visible_nodes if n.type == "skill"]
         
-        # Sort them basically by parent depth or name
-        def layout_nodes(node_list, start_x, start_y):
-            y_offset = start_y
-            for n in node_list:
-                n.x = start_x
-                n.y = y_offset
-                y_offset += 80 # Vertical spacing
-                
-        # We will dynamically override their x, y based on this list, ignoring the messy ones from main_god_space
-        layout_nodes(bl_nodes, -250, -self.height/2 + 80)
-        layout_nodes(c_nodes, 0, -self.height/2 + 80)
-        layout_nodes(sk_nodes, 250, -self.height/2 + 80)
-        
-        cx = self.width / 2 + self.cam_x
-        cy = self.height / 2 + self.cam_y
-        
-        # Draw God Sphere (Now at the top center)
-        self.draw_god_sphere(cx, cy - self.height/2 + 60)
-        
-        # Connections (Only draw parent lines if they make sense now, or just vertical lines)
+        # Layout: God Sphere at center (0,0) relative to camera
+        # Bloodlines branch to the Left
+        for i, base in enumerate(bl_bases):
+            base.x = -200 - (i % 2) * 150
+            base.y = -150 + (i // 2) * 200
+
+            # Trace children
+            child_y_offset = 80
+            def position_children(parent_id, px, py):
+                nonlocal child_y_offset
+                children = [n for n in visible_nodes if parent_id in n.parent_ids]
+                for c in children:
+                    c.x = px
+                    c.y = py + child_y_offset
+                    child_y_offset += 80
+                    position_children(c.id, c.x, c.y)
+            position_children(base.id, base.x, base.y)
+
+        # Cultivations branch to the Right
+        for i, base in enumerate(c_bases):
+            base.x = 200 + (i % 2) * 150
+            base.y = -150 + (i // 2) * 200
+
+            child_y_offset = 80
+            def position_children(parent_id, px, py):
+                nonlocal child_y_offset
+                children = [n for n in visible_nodes if parent_id in n.parent_ids]
+                for c in children:
+                    c.x = px
+                    c.y = py + child_y_offset
+                    child_y_offset += 80
+                    position_children(c.id, c.x, c.y)
+            position_children(base.id, base.x, base.y)
+
+        # Skills float below the God Sphere in a grid
+        cols = 4
+        for i, skill in enumerate(skills):
+            r = i // cols
+            c = i % cols
+            skill.x = (c - cols/2 + 0.5) * 160
+            skill.y = 200 + r * 80
+
+        # Draw God Sphere strictly at center
+        self.draw_god_sphere(cx, cy)
+
+        # Connections
         for node in visible_nodes:
             for p_id in node.parent_ids:
                 p_node = self.nodes.get(p_id)
                 if p_node and is_visible(p_node):
                     col = self.colors["unlocked"] if (node.is_unlocked and p_node.is_unlocked) else self.colors["locked"]
                     self.canvas.create_line(cx+p_node.x, cy+p_node.y, cx+node.x, cy+node.y, fill=col, width=2)
+                elif "root" in p_id:
+                    # Connect bases to the God Sphere at center (0,0)
+                    col = self.colors["unlocked"] if node.is_unlocked else self.colors["locked"]
+                    self.canvas.create_line(cx, cy, cx+node.x, cy+node.y, fill=col, width=2, dash=(4,2))
 
         # Draw Nodes as clean Tech Panels instead of Circles
         box_w, box_h = 60, 25
@@ -170,7 +207,6 @@ class EnhancementRenderer:
             if cost != "":
                 self.canvas.create_text(nx, ny+10, text=f"💎 {cost}", fill="#eab308", font=("Consolas", 8), tags=(f"node_{node.id}",))
 
-        self.draw_god_sphere(cx, cy)
         self.draw_stat_panel()
 
     def draw_god_sphere(self, cx, cy):

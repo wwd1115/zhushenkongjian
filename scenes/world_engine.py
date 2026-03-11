@@ -212,6 +212,8 @@ class ProceduralWorld:
         # Process Room
         if not room.get("cleared", False):
             if room["type"] == "enemy":
+                # Ensure we return to map view before combat starts if we were in text view
+                GUI_INSTANCE.gui_update_map_pos(self.player_x, self.player_y, self.map_data)
                 GUI_INSTANCE.gui_update_status("遭遇敌人！")
                 time.sleep(1)
                 max_count = min(3, max(1, (self.player_level // 3) + 1))
@@ -321,6 +323,7 @@ class ProceduralWorld:
                     
                 room["cleared"] = True
             elif room["type"] == "boss":
+                GUI_INSTANCE.gui_update_map_pos(self.player_x, self.player_y, self.map_data)
                 GUI_INSTANCE.gui_update_status("🚨 遭遇关底 Boss！")
                 time.sleep(1.5)
                 boss = self.get_scaled_enemies(count=1, is_boss=True)

@@ -103,7 +103,7 @@ class EnhancementRenderer:
 
         # Helper to determine if a node should be visible
         def is_visible(node):
-            if node.type == "category":
+            if node.content_type == "category":
                 return False # Hide arbitrary roots to save space
 
             if not node.parent_ids or any("root" in pid for pid in node.parent_ids):
@@ -118,9 +118,9 @@ class EnhancementRenderer:
         visible_nodes = [n for n in self.nodes.values() if is_visible(n)]
 
         # Group nodes
-        bl_bases = [n for n in visible_nodes if n.type == "bloodline_base"]
-        c_bases = [n for n in visible_nodes if n.type == "cultivation_base"]
-        skills = [n for n in visible_nodes if n.type == "skill"]
+        bl_bases = [n for n in visible_nodes if n.content_type == "bloodline_base"]
+        c_bases = [n for n in visible_nodes if n.content_type == "cultivation_base"]
+        skills = [n for n in visible_nodes if n.content_type == "skill"]
         
         # Layout: God Sphere at center (0,0) relative to camera
         # Bloodlines branch to the Left

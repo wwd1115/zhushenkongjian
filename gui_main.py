@@ -301,6 +301,12 @@ class GUI(ctk.CTk):
 
                 self.fx_renderer.start_vortex(duration_ms=1500, on_complete=launch_map)
             elif msg_type == "update_map_pos":
+                # Ensure we return back to the map view if we were in an event dialog
+                if getattr(self, 'is_in_map', False):
+                    self.text_frame.grid_remove()
+                    self.map_frame.grid(row=0, column=0, padx=10, pady=10, sticky="nsew")
+                    self.map_frame.tkraise()
+                    self.update_idletasks()
                 self.map_renderer.update_map(msg["map_data"])
                 self.map_renderer.update_player_pos(msg["x"], msg["y"])
             elif msg_type == "end_map_exploration":
@@ -381,12 +387,9 @@ class GUI(ctk.CTk):
         lbl = ctk.CTkLabel(self.buttons_frame, text="处理中...")
         lbl.pack(pady=10)
 
-        # If this was a map event dialog, return back to map view
-        if return_to_map:
-            self.text_frame.grid_remove()
-            self.map_frame.grid(row=0, column=0, padx=10, pady=10, sticky="nsew")
-            self.map_frame.tkraise()
-            self.update_idletasks()
+        # If this was a map event dialog, we don't return to map view immediately here
+        # because there might be follow-up dialogs (e.g. Chest -> Open -> Found Item -> Continue).
+        # Instead, we rely on the backend to tell us when to return to the map.
 
     # 供游戏逻辑线程调用的接口
     def gui_print(self, text, color="white"):

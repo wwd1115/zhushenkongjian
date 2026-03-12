@@ -11,8 +11,8 @@ permissions:
 jobs:
   auto-approve:
     runs-on: ubuntu-latest
-    # 核心判断：只有当发起 PR 的用户名是 'jules' 时，才会执行后续步骤
-    if: github.actor == 'jules' 
+    # 核心判断：只有当发起 PR 的用户名是 'google-labs-jules[bot]' 时，才会执行后续步骤
+    if: github.actor == 'google-labs-jules[bot]' 
     steps:
       - name: Approve Pull Request
         env:

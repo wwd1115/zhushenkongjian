@@ -35,6 +35,17 @@ class EnhancementRenderer:
         self.drag_start_y = 0
         self.is_dragging = False
         
+        # Tabs and Drawer state
+        self.current_tab = "all" # "all", "bloodline", "cultivation", "skill"
+        self.tabs = [
+            {"id": "all", "label": "🌌 核心枢纽", "x": 0, "y": 0, "w": 120},
+            {"id": "bloodline", "label": "🧬 血统进化", "x": 0, "y": 0, "w": 120},
+            {"id": "cultivation", "label": "☯️ 功法推演", "x": 0, "y": 0, "w": 120},
+            {"id": "skill", "label": "💡 技能烙印", "x": 0, "y": 0, "w": 120}
+        ]
+        self.is_stat_panel_open = False
+        self.stat_drawer_anim = 0.0 # 0.0 (closed) to 1.0 (open)
+
         self.on_node_click = None
         
         # Bindings
@@ -103,6 +114,15 @@ class EnhancementRenderer:
 
         # Helper to determine if a node should be visible
         def is_visible(node):
+            # 1. Filter by Tab
+            if self.current_tab != "all":
+                if self.current_tab == "bloodline" and "bloodline" not in node.content_type:
+                    return False
+                if self.current_tab == "cultivation" and "cultivation" not in node.content_type:
+                    return False
+                if self.current_tab == "skill" and node.content_type != "skill":
+                    return False
+
             if node.content_type == "category":
                 return False # Hide arbitrary roots to save space
 
@@ -122,47 +142,91 @@ class EnhancementRenderer:
         c_bases = [n for n in visible_nodes if n.content_type == "cultivation_base"]
         skills = [n for n in visible_nodes if n.content_type == "skill"]
         
+        # Layout spacing adjustments based on view
+        if self.current_tab == "all":
+            # Compact view (all)
+            bl_x_offset = -250
+            bl_x_spacing = 150
+            bl_y_spacing = 200
+
+            c_x_offset = 250
+            c_x_spacing = 150
+            c_y_spacing = 200
+
+            skill_cols = 4
+            skill_y_start = 250
+            skill_x_spacing = 160
+            skill_y_spacing = 100
+            child_y_dist = 90
+        else:
+            # Expanded view (specific tab)
+            # When viewing a specific tab, we spread them out more widely
+            bl_x_offset = -150 if len(bl_bases) > 1 else 0
+            bl_x_spacing = 250
+            bl_y_spacing = 250
+
+            c_x_offset = -150 if len(c_bases) > 1 else 0
+            c_x_spacing = 250
+            c_y_spacing = 250
+
+            skill_cols = 6
+            skill_y_start = 180
+            skill_x_spacing = 180
+            skill_y_spacing = 120
+            child_y_dist = 110
+
         # Layout: God Sphere at center (0,0) relative to camera
-        # Bloodlines branch to the Left
+
+        # Bloodlines
         for i, base in enumerate(bl_bases):
-            base.x = -200 - (i % 2) * 150
-            base.y = -150 + (i // 2) * 200
+            # Only apply alternating offset if there are multiple bases to spread them nicely
+            x_idx = (i % 2) if len(bl_bases) > 1 else 0
+            base.x = bl_x_offset - x_idx * bl_x_spacing
+
+            if self.current_tab == "bloodline":
+                base.x = (i - (len(bl_bases)-1)/2.0) * bl_x_spacing # Distribute evenly if focused
+
+            base.y = -100 + (i // 2) * bl_y_spacing
 
             # Trace children
-            child_y_offset = 80
+            child_y_offset = child_y_dist
             def position_children(parent_id, px, py):
                 nonlocal child_y_offset
                 children = [n for n in visible_nodes if parent_id in n.parent_ids]
                 for c in children:
                     c.x = px
                     c.y = py + child_y_offset
-                    child_y_offset += 80
+                    child_y_offset += child_y_dist
                     position_children(c.id, c.x, c.y)
             position_children(base.id, base.x, base.y)
 
-        # Cultivations branch to the Right
+        # Cultivations
         for i, base in enumerate(c_bases):
-            base.x = 200 + (i % 2) * 150
-            base.y = -150 + (i // 2) * 200
+            x_idx = (i % 2) if len(c_bases) > 1 else 0
+            base.x = c_x_offset + x_idx * c_x_spacing
 
-            child_y_offset = 80
+            if self.current_tab == "cultivation":
+                 base.x = (i - (len(c_bases)-1)/2.0) * c_x_spacing
+
+            base.y = -100 + (i // 2) * c_y_spacing
+
+            child_y_offset = child_y_dist
             def position_children(parent_id, px, py):
                 nonlocal child_y_offset
                 children = [n for n in visible_nodes if parent_id in n.parent_ids]
                 for c in children:
                     c.x = px
                     c.y = py + child_y_offset
-                    child_y_offset += 80
+                    child_y_offset += child_y_dist
                     position_children(c.id, c.x, c.y)
             position_children(base.id, base.x, base.y)
 
-        # Skills float below the God Sphere in a grid
-        cols = 4
+        # Skills
         for i, skill in enumerate(skills):
-            r = i // cols
-            c = i % cols
-            skill.x = (c - cols/2 + 0.5) * 160
-            skill.y = 200 + r * 80
+            r = i // skill_cols
+            c = i % skill_cols
+            skill.x = (c - skill_cols/2 + 0.5) * skill_x_spacing
+            skill.y = skill_y_start + r * skill_y_spacing
 
         # Draw God Sphere strictly at center
         self.draw_god_sphere(cx, cy)
@@ -207,7 +271,43 @@ class EnhancementRenderer:
             if cost != "":
                 self.canvas.create_text(nx, ny+10, text=f"💎 {cost}", fill="#eab308", font=("Consolas", 8), tags=(f"node_{node.id}",))
 
+        # Draw Tabs Menu
+        self.draw_tabs()
+
         self.draw_stat_panel()
+
+    def draw_tabs(self):
+        tab_h = 40
+        # Glassmorphism panel at the top
+        self.canvas.create_rectangle(0, 0, self.width, tab_h+10, fill="#0f172a", stipple="gray50", outline="")
+        self.canvas.create_line(0, tab_h+10, self.width, tab_h+10, fill=self.colors["unlocked"], width=2, dash=(4,2))
+
+        # Calculate center offset for tabs
+        total_w = sum(t["w"] + 10 for t in self.tabs) - 10
+        start_x = (self.width - total_w) / 2
+
+        curr_x = start_x
+        for tab in self.tabs:
+            tab["x"] = curr_x
+            tab["y"] = 10
+
+            is_active = self.current_tab == tab["id"]
+            bg_col = self.colors["unlocked"] if is_active else self.colors["panel_bg"]
+            text_col = "#020617" if is_active else self.colors["text"]
+
+            tag = f"tab_{tab['id']}"
+
+            # Draw tab polygon (sci-fi angled shape)
+            pts = [
+                curr_x, 10 + tab_h,
+                curr_x + 10, 10,
+                curr_x + tab["w"] - 10, 10,
+                curr_x + tab["w"], 10 + tab_h
+            ]
+            self.canvas.create_polygon(pts, fill=bg_col, outline=self.colors["unlocked"], width=2, tags=(tag,))
+            self.canvas.create_text(curr_x + tab["w"]/2, 10 + tab_h/2, text=tab["label"], fill=text_col, font=("Microsoft YaHei", 11, "bold"), tags=(tag,))
+
+            curr_x += tab["w"] + 10
 
     def draw_god_sphere(self, cx, cy):
         pulse = math.sin(self.tick * 0.1) * 8
@@ -219,7 +319,25 @@ class EnhancementRenderer:
     def draw_stat_panel(self):
         if not self.player_stats: return
         w, h = 280, 480
-        x, y = self.width - w - 20, 20
+
+        # Calculate drawer X position based on animation state
+        # Open: self.width - w, Closed: self.width
+        drawer_w = w + 20
+        offset_x = self.width - (drawer_w * self.stat_drawer_anim)
+        x, y = offset_x, 60
+
+        # Draw toggle button (attached to the left side of the drawer)
+        toggle_w, toggle_h = 40, 60
+        tx, ty = x - toggle_w, y + 20
+        self.canvas.create_polygon(tx+10, ty, tx+toggle_w, ty, tx+toggle_w, ty+toggle_h, tx+10, ty+toggle_h, tx, ty+toggle_h/2, fill=self.colors["panel_bg"], outline=self.colors["purchasable"], tags="stat_toggle")
+
+        toggle_icon = ">>" if self.is_stat_panel_open else "<<"
+        self.canvas.create_text(tx + toggle_w/2 + 5, ty + toggle_h/2, text=toggle_icon, fill=self.colors["unlocked"], font=("Consolas", 14, "bold"), tags="stat_toggle")
+
+        # If fully closed and not animating, don't draw the rest of the panel
+        if self.stat_drawer_anim < 0.01:
+             return
+
         # Glassmorphism-like Background
         self.canvas.create_rectangle(x, y, x+w, y+h, fill=self.colors["panel_bg"], outline=self.colors["purchasable"], width=1)
         
@@ -273,6 +391,12 @@ class EnhancementRenderer:
             self.canvas.coords(self.god_sphere, cx-r, cy-r, cx+r, cy+r)
             self.canvas.coords(self.god_glow, cx-r-15, cy-r-15, cx+r+15, cy+r+15)
             
+        # Animate stat drawer
+        target_anim = 1.0 if self.is_stat_panel_open else 0.0
+        if abs(self.stat_drawer_anim - target_anim) > 0.01:
+            self.stat_drawer_anim += (target_anim - self.stat_drawer_anim) * 0.2
+            self.draw_all()
+
     def on_press(self, event):
         self.drag_start_x, self.drag_start_y = event.x, event.y
         self.is_dragging = False
@@ -289,7 +413,17 @@ class EnhancementRenderer:
         if not items: return
         tags = self.canvas.gettags(items[0])
         for tag in tags:
-            if tag.startswith("node_"):
+            if tag.startswith("tab_"):
+                tab_id = tag[len("tab_"):]
+                self.current_tab = tab_id
+                self.cam_x = 0
+                self.cam_y = 0
+                self.draw_all()
+                return
+            elif tag == "stat_toggle":
+                self.is_stat_panel_open = not self.is_stat_panel_open
+                return
+            elif tag.startswith("node_"):
                 node_id = tag[len("node_"):]
                 if self.on_node_click:
                     node = self.nodes.get(node_id)

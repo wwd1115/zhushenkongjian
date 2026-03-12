@@ -252,9 +252,64 @@ class ProceduralWorld:
                 
             elif room["type"] == "event":
                 GUI_INSTANCE.gui_update_status("触发未知奇遇事件！")
-                event_type = self.rng.choice(["shrine", "altar", "chest", "trap", "merchant", "nothing"])
                 
-                if event_type == "chest":
+                import json
+                try:
+                    with open("data/events.json", "r", encoding="utf-8") as f:
+                        all_events = json.load(f)
+                except:
+                    all_events = {}
+
+                world_events = []
+                for pool_name in self.template.event_pool:
+                    if pool_name in all_events:
+                        world_events.extend(all_events[pool_name])
+
+                # Default generic events
+                event_type_pool = ["shrine", "altar", "chest", "trap", "merchant", "nothing"]
+                if world_events and self.rng.random() < 0.5:
+                    event_type = "json_event"
+                else:
+                    event_type = self.rng.choice(event_type_pool)
+
+                if event_type == "json_event":
+                    ev = self.rng.choice(world_events)
+                    GUI_INSTANCE.gui_print(f"📖 {ev['text']}", "cyan")
+
+                    opts = {}
+                    for i, opt in enumerate(ev["options"]):
+                        opts[str(i+1)] = opt["desc"]
+                    res = GUI_INSTANCE.gui_get_input(opts, is_event=True)
+
+                    selected_idx = int(res) - 1
+                    selected_opt = ev["options"][selected_idx]
+
+                    success = True
+                    if "req_stat" in selected_opt:
+                        stat = getattr(self.player, f"total_{selected_opt['req_stat']}", getattr(self.player, selected_opt['req_stat'], 0))
+                        if stat < selected_opt["req_val"]:
+                            success = False
+
+                    if success:
+                        res_data = selected_opt["success"]
+                        GUI_INSTANCE.gui_print(f"✅ {res_data['text']}", "green")
+                        if "reward_heal" in res_data:
+                            self.player.heal(res_data["reward_heal"])
+                        if "reward_mp" in res_data:
+                            self.player.restore_mp(res_data["reward_mp"])
+                        if "reward_points" in res_data:
+                            self.player.points += res_data["reward_points"]
+                    else:
+                        res_data = selected_opt["fail"]
+                        GUI_INSTANCE.gui_print(f"❌ {res_data['text']}", "red")
+                        if "damage" in res_data:
+                            self.player.take_damage(res_data["damage"])
+
+                    room["cleared"] = True
+                    if self.player.is_alive():
+                        GUI_INSTANCE.gui_get_input({"0": "继续"}, is_event=True)
+
+                elif event_type == "chest":
                     GUI_INSTANCE.gui_print("🎁 你发现了一个隐藏的奇遇宝箱！散发着诱人的光芒。", "cyan")
                     res = GUI_INSTANCE.gui_get_input({"1": "开启", "2": "无视并离开"}, is_event=True)
                     if res == "1":

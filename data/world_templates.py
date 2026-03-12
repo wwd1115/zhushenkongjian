@@ -16,7 +16,7 @@ TEMPLATES = [
             {"type": "kill", "desc": "清理 {target} 只游荡的怪物", "base_value": 12},
             {"type": "boss", "desc": "寻找并击杀该区域的变异母体", "base_value": 10}
         ],
-        event_pool=[],
+        event_pool=["zombie_world"],
         env_effects=["弥漫着尸臭", "下着酸雨", "死寂无声", "布满暗红血迹"]
     ),
     WorldTemplate(
@@ -24,17 +24,17 @@ TEMPLATES = [
         desc_template="你坠入了一个[环境]的奇幻领域。前方是深不可测的[地形1]，传说中隐藏着神明的遗物。",
         terrains=["古老陵墓", "毒气沼泽", "哥布林营地", "龙之巢穴", "水晶洞穴"],
         enemy_pool=[
-            {"name": "骷髅兵", "hp": 60, "attack": 20, "agi": 10, "drop_points": 25},
+            {"name": "哥布林掠夺者", "hp": 40, "attack": 15, "agi": 25, "drop_points": 30},
             {"name": "剧毒史莱姆", "hp": 80, "attack": 15, "agi": 5, "defense":5, "drop_points": 30},
-            {"name": "地精法师", "hp": 50, "attack": 40, "agi": 15, "drop_points": 50},
-            {"name": "深渊骨龙", "hp": 400, "attack": 60, "agi": 20, "defense": 30, "drop_points": 250}
+            {"name": "兽人狂战士", "hp": 150, "attack": 35, "agi": 10, "defense": 10, "drop_points": 120},
+            {"name": "烈焰幼龙", "hp": 400, "attack": 70, "agi": 30, "defense": 30, "drop_points": 500}
         ],
         quest_pool=[
             {"type": "survive", "desc": "在恶劣环境中生存 {target} 步", "base_value": 10},
             {"type": "kill", "desc": "剿灭 {target} 只深渊魔物", "base_value": 10},
             {"type": "boss", "desc": "发掘并消灭远古守卫", "base_value": 12}
         ],
-        event_pool=[],
+        event_pool=["fantasy_world"],
         env_effects=["魔力紊乱", "令人窒息", "满是诅咒气息", "幽暗无光"]
     ),
     WorldTemplate(
@@ -43,9 +43,9 @@ TEMPLATES = [
         terrains=["霓虹黑市", "高空轻轨", "荒漠提炼厂", "克隆人培育中心", "AI核心机房"],
         enemy_pool=[
             {"name": "叛军士兵", "hp": 100, "attack": 30, "agi": 15, "drop_points": 40},
-            {"name": "安保无人机", "hp": 60, "attack": 20, "agi": 25, "defense":10, "drop_points": 35},
-            {"name": "改造赛博格", "hp": 150, "attack": 45, "agi": 18, "defense": 15, "drop_points": 80},
-            {"name": "战术机甲", "hp": 500, "attack": 80, "agi": 10, "defense": 40, "drop_points": 300}
+            {"name": "安保无人机", "hp": 60, "attack": 20, "agi": 35, "defense":10, "drop_points": 40},
+            {"name": "赛博忍者", "hp": 200, "attack": 60, "agi": 45, "defense": 15, "drop_points": 150},
+            {"name": "重装机甲 (Boss)", "hp": 800, "attack": 120, "agi": 15, "defense": 50, "drop_points": 800}
         ],
         quest_pool=[
             {"type": "survive", "desc": "躲避两军清剿，坚持 {target} 步", "base_value": 12},

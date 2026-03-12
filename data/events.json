@@ -14,6 +14,24 @@
       "options": [
         {"desc": "去搜索物资", "success": {"text": "幸运地没有遇到其他轮回者，你找到了一些有用的物资！(恢复30生命和30精神)", "reward_heal": 30, "reward_mp": 30}}
       ]
+    },
+    {
+      "id": "abandoned_hospital",
+      "text": "你发现了一座废弃的医院，里面隐约传来微弱的亮光...",
+      "options": [
+        {"desc": "搜刮急救室 (需要感知>=20)", "req_stat": "per", "req_val": 20, "success": {"text": "你避开了暗处的陷阱，找到了一些高级医疗包和遗留物资。", "reward_heal": 50, "reward_points": 200}, "fail": {"text": "你没有注意到脚下的玻璃碎片，惊动了沉睡的护士长变异体！受了重伤。", "damage": 50}},
+        {"desc": "转身离开", "success": {"text": "你觉得这里太危险，安全地离开了。"}}
+      ]
+    }
+  ],
+  "fantasy_world": [
+    {
+      "id": "ancient_shrine",
+      "text": "路边有一座古老的剑神神龛，虽然布满青苔但依然透着凌厉的剑意。",
+      "options": [
+        {"desc": "诚心参拜 (需要魅力>=15)", "req_stat": "cha", "req_val": 15, "success": {"text": "剑神虚影显化，赞赏你的资质，传授了你一丝剑意！", "reward_mp": 50, "reward_points": 300}, "fail": {"text": "神像对你毫无反应，其上的威压反而震伤了你的内腑。", "damage": 30}},
+        {"desc": "无视并离开", "success": {"text": "你没有理会这座神龛，继续前进。"}}
+      ]
     }
   ]
 }

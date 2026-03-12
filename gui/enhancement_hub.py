@@ -101,13 +101,18 @@ class EnhancementRenderer:
 
     def draw_all(self):
         self.canvas.delete("all")
-        self.canvas.create_rectangle(0, 0, self.width, self.height, fill=self.colors["bg"], outline="")
+        # To avoid lag, we draw a large static background instead of many small lines for the grid
+        self.canvas.create_rectangle(-2000, -2000, 2000, 2000, fill=self.colors["bg"], outline="")
+
+        # Grid Background (Optimized: Only draw grid lines in visible camera bounds)
+        grid_size = 60
+        start_x = int((-self.cam_x) // grid_size) * grid_size
+        start_y = int((-self.cam_y) // grid_size) * grid_size
         
-        # Grid Background
-        for i in range(0, int(self.width), 60):
-            self.canvas.create_line(i, 0, i, self.height, fill=self.colors["grid"], dash=(2, 4))
-        for i in range(0, int(self.height), 60):
-            self.canvas.create_line(0, i, self.width, i, fill=self.colors["grid"], dash=(2, 4))
+        for i in range(start_x, start_x + int(self.width) + grid_size, grid_size):
+            self.canvas.create_line(i + self.cam_x, 0, i + self.cam_x, self.height, fill=self.colors["grid"], dash=(2, 4))
+        for i in range(start_y, start_y + int(self.height) + grid_size, grid_size):
+            self.canvas.create_line(0, i + self.cam_y, self.width, i + self.cam_y, fill=self.colors["grid"], dash=(2, 4))
         
         cx = self.width / 2 + self.cam_x
         cy = self.height / 2 + self.cam_y
@@ -232,10 +237,13 @@ class EnhancementRenderer:
         self.draw_god_sphere(cx, cy)
 
         # Connections
+        # Cache visible set for O(1) lookups
+        visible_set = {n.id for n in visible_nodes}
+
         for node in visible_nodes:
             for p_id in node.parent_ids:
-                p_node = self.nodes.get(p_id)
-                if p_node and is_visible(p_node):
+                if p_id in visible_set:
+                    p_node = self.nodes.get(p_id)
                     col = self.colors["unlocked"] if (node.is_unlocked and p_node.is_unlocked) else self.colors["locked"]
                     self.canvas.create_line(cx+p_node.x, cy+p_node.y, cx+node.x, cy+node.y, fill=col, width=2)
                 elif "root" in p_id:
@@ -245,8 +253,13 @@ class EnhancementRenderer:
 
         # Draw Nodes as clean Tech Panels instead of Circles
         box_w, box_h = 60, 25
+        # Pre-filter nodes that are actually on screen to save draw calls
+        screen_margin = 100
         for node in visible_nodes:
             nx, ny = cx + node.x, cy + node.y
+            if nx < -screen_margin or nx > self.width + screen_margin or ny < -screen_margin or ny > self.height + screen_margin:
+                continue
+
             col = self.get_color_for_node(node)
             
             # Outer Glow

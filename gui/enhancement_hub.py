@@ -103,16 +103,16 @@ class EnhancementRenderer:
         self.canvas.delete("all")
         # To avoid lag, we draw a large static background instead of many small lines for the grid
         self.canvas.create_rectangle(-2000, -2000, 2000, 2000, fill=self.colors["bg"], outline="")
-
-        # Grid Background (Optimized: Only draw grid lines in visible camera bounds)
-        grid_size = 60
-        start_x = int((-self.cam_x) // grid_size) * grid_size
-        start_y = int((-self.cam_y) // grid_size) * grid_size
         
-        for i in range(start_x, start_x + int(self.width) + grid_size, grid_size):
-            self.canvas.create_line(i + self.cam_x, 0, i + self.cam_x, self.height, fill=self.colors["grid"], dash=(2, 4))
-        for i in range(start_y, start_y + int(self.height) + grid_size, grid_size):
-            self.canvas.create_line(0, i + self.cam_y, self.width, i + self.cam_y, fill=self.colors["grid"], dash=(2, 4))
+        # Grid Background (Optimized: We draw a large grid that can move with the camera)
+        grid_size = 60
+        # Draw grid covering a much wider area than the screen to allow panning without redraws
+        # The movable tag will shift these lines naturally.
+        pad = 2000
+        for i in range(-pad, pad, grid_size):
+            self.canvas.create_line(i + self.cam_x, -pad, i + self.cam_x, pad, fill=self.colors["grid"], dash=(2, 4), tags="movable")
+        for i in range(-pad, pad, grid_size):
+            self.canvas.create_line(-pad, i + self.cam_y, pad, i + self.cam_y, fill=self.colors["grid"], dash=(2, 4), tags="movable")
         
         cx = self.width / 2 + self.cam_x
         cy = self.height / 2 + self.cam_y
@@ -233,40 +233,71 @@ class EnhancementRenderer:
             skill.x = (c - skill_cols/2 + 0.5) * skill_x_spacing
             skill.y = skill_y_start + r * skill_y_spacing
 
-        # Draw God Sphere strictly at center
-        self.draw_god_sphere(cx, cy)
-
         # Connections
         # Cache visible set for O(1) lookups
         visible_set = {n.id for n in visible_nodes}
+
+        def draw_circuit_line(x1, y1, x2, y2, color, dash_pattern=None):
+            # Draw an orthogonal "circuit-board" style line to avoid chaotic spiderweb diagonals
+            mid_y = (y1 + y2) / 2
+            pts = [x1, y1, x1, mid_y, x2, mid_y, x2, y2]
+            if dash_pattern:
+                self.canvas.create_line(pts, fill=color, width=2, dash=dash_pattern, tags="movable")
+            else:
+                self.canvas.create_line(pts, fill=color, width=2, tags="movable")
+
+        # Draw main trunks for categories to avoid 50 lines going directly to the center sphere
+        drawn_trunks = set()
 
         for node in visible_nodes:
             for p_id in node.parent_ids:
                 if p_id in visible_set:
                     p_node = self.nodes.get(p_id)
                     col = self.colors["unlocked"] if (node.is_unlocked and p_node.is_unlocked) else self.colors["locked"]
-                    self.canvas.create_line(cx+p_node.x, cy+p_node.y, cx+node.x, cy+node.y, fill=col, width=2)
+                    draw_circuit_line(cx+p_node.x, cy+p_node.y, cx+node.x, cy+node.y, col)
                 elif "root" in p_id:
-                    # Connect bases to the God Sphere at center (0,0)
                     col = self.colors["unlocked"] if node.is_unlocked else self.colors["locked"]
-                    self.canvas.create_line(cx, cy, cx+node.x, cy+node.y, fill=col, width=2, dash=(4,2))
+
+                    # Group connections by their hidden root to avoid starburst "spiderweb" to the center
+                    if "skill" in p_id:
+                        trunk_x, trunk_y = cx, cy + 120
+                        if "skill" not in drawn_trunks:
+                            draw_circuit_line(cx, cy, trunk_x, trunk_y, self.colors["unlocked"], dash_pattern=(4,2))
+                            drawn_trunks.add("skill")
+                        draw_circuit_line(trunk_x, trunk_y, cx+node.x, cy+node.y, col, dash_pattern=(4,2))
+                    elif "bl_root" in p_id:
+                        trunk_x, trunk_y = cx, cy - 120
+                        if "bl_root" not in drawn_trunks:
+                            draw_circuit_line(cx, cy, trunk_x, trunk_y, self.colors["unlocked"], dash_pattern=(4,2))
+                            drawn_trunks.add("bl_root")
+                        draw_circuit_line(trunk_x, trunk_y, cx+node.x, cy+node.y, col, dash_pattern=(4,2))
+                    elif "cult_root" in p_id:
+                        trunk_x, trunk_y = cx, cy - 120
+                        if "cult_root" not in drawn_trunks:
+                            draw_circuit_line(cx, cy, trunk_x, trunk_y, self.colors["unlocked"], dash_pattern=(4,2))
+                            drawn_trunks.add("cult_root")
+                        draw_circuit_line(trunk_x, trunk_y, cx+node.x, cy+node.y, col, dash_pattern=(4,2))
+                    else:
+                        draw_circuit_line(cx, cy, cx+node.x, cy+node.y, col, dash_pattern=(4,2))
+
+        # Draw God Sphere strictly at center, drawn after lines so it covers them
+        self.draw_god_sphere(cx, cy)
 
         # Draw Nodes as clean Tech Panels instead of Circles
         box_w, box_h = 60, 25
-        # Pre-filter nodes that are actually on screen to save draw calls
-        screen_margin = 100
+        # We no longer cull nodes by screen bounds during draw_all because the native canvas.move
+        # handles off-screen rendering natively much faster than python can rebuild them every frame.
         for node in visible_nodes:
             nx, ny = cx + node.x, cy + node.y
-            if nx < -screen_margin or nx > self.width + screen_margin or ny < -screen_margin or ny > self.height + screen_margin:
-                continue
 
             col = self.get_color_for_node(node)
             
             # Outer Glow
-            self.canvas.create_rectangle(nx-box_w-3, ny-box_h-3, nx+box_w+3, ny+box_h+3, fill="", outline=col, width=1, dash=(2,2))
+            self.canvas.create_rectangle(nx-box_w-3, ny-box_h-3, nx+box_w+3, ny+box_h+3, fill="", outline=col, width=1, dash=(2,2), tags="movable")
             
             # Inner Box
-            node.ui_circle = self.canvas.create_rectangle(nx-box_w, ny-box_h, nx+box_w, ny+box_h, fill="#0f172a", outline=col, width=2, tags=(f"node_{node.id}",))
+            tgs = (f"node_{node.id}", "movable")
+            node.ui_circle = self.canvas.create_rectangle(nx-box_w, ny-box_h, nx+box_w, ny+box_h, fill="#0f172a", outline=col, width=2, tags=tgs)
             
             # Content Icon + Name (Side-by-side or stacked inside box)
             if "bloodline" in node.content_type: icon = "🧬"
@@ -277,12 +308,12 @@ class EnhancementRenderer:
             # Truncate very long names for the box
             display_name = node.name.replace("\\n", " ") # Remove explicit newlines if any
             
-            self.canvas.create_text(nx, ny-6, text=f"{icon} {display_name}", fill=col, font=("Microsoft YaHei", 9, "bold"), tags=(f"node_{node.id}",), width=110, justify="center")
+            self.canvas.create_text(nx, ny-6, text=f"{icon} {display_name}", fill=col, font=("Microsoft YaHei", 9, "bold"), tags=tgs, width=110, justify="center")
             
             # Optional cost text at bottom of box
             cost = node.data.get("cost", "") if node.data else ""
             if cost != "":
-                self.canvas.create_text(nx, ny+10, text=f"💎 {cost}", fill="#eab308", font=("Consolas", 8), tags=(f"node_{node.id}",))
+                self.canvas.create_text(nx, ny+10, text=f"💎 {cost}", fill="#eab308", font=("Consolas", 8), tags=tgs)
 
         # Draw Tabs Menu
         self.draw_tabs()
@@ -325,9 +356,9 @@ class EnhancementRenderer:
     def draw_god_sphere(self, cx, cy):
         pulse = math.sin(self.tick * 0.1) * 8
         r = 60 + pulse
-        self.god_glow = self.canvas.create_oval(cx-r-15, cy-r-15, cx+r+15, cy+r+15, fill="", outline=self.colors["unlocked"], width=2, dash=(4, 4))
-        self.god_sphere = self.canvas.create_oval(cx-r, cy-r, cx+r, cy+r, fill="#020617", outline=self.colors["unlocked"], width=5)
-        self.canvas.create_text(cx, cy, text="主神 Core", fill=self.colors["unlocked"], font=("Microsoft YaHei", 16, "bold"))
+        self.god_glow = self.canvas.create_oval(cx-r-15, cy-r-15, cx+r+15, cy+r+15, fill="", outline=self.colors["unlocked"], width=2, dash=(4, 4), tags="movable")
+        self.god_sphere = self.canvas.create_oval(cx-r, cy-r, cx+r, cy+r, fill="#020617", outline=self.colors["unlocked"], width=5, tags="movable")
+        self.god_text = self.canvas.create_text(cx, cy, text="主神 Core", fill=self.colors["unlocked"], font=("Microsoft YaHei", 16, "bold"), tags="movable")
 
     def draw_stat_panel(self):
         if not self.player_stats: return
@@ -397,13 +428,17 @@ class EnhancementRenderer:
 
     def step(self):
         self.tick += 1
-        cx, cy = self.width / 2 + self.cam_x, self.height / 2 + self.cam_y
         pulse = math.sin(self.tick * 0.1) * 8
         r = 60 + pulse
-        if self.god_sphere:
-            self.canvas.coords(self.god_sphere, cx-r, cy-r, cx+r, cy+r)
-            self.canvas.coords(self.god_glow, cx-r-15, cy-r-15, cx+r+15, cy+r+15)
-            
+        if getattr(self, "god_sphere", None) and getattr(self, "god_text", None):
+            # To update the pulse size without redrawing the whole screen,
+            # we read the current center from the text coordinate (which moves with drag)
+            coords = self.canvas.coords(self.god_text)
+            if coords:
+                cx, cy = coords[0], coords[1]
+                self.canvas.coords(self.god_sphere, cx-r, cy-r, cx+r, cy+r)
+                self.canvas.coords(self.god_glow, cx-r-15, cy-r-15, cx+r+15, cy+r+15)
+
         # Animate stat drawer
         target_anim = 1.0 if self.is_stat_panel_open else 0.0
         if abs(self.stat_drawer_anim - target_anim) > 0.01:
@@ -418,7 +453,10 @@ class EnhancementRenderer:
         if abs(dx) > 5 or abs(dy) > 5: self.is_dragging = True
         self.cam_x += dx; self.cam_y += dy
         self.drag_start_x, self.drag_start_y = event.x, event.y
-        self.draw_all()
+
+        # Performance optimization: Shift objects natively instead of destroying/recreating thousands of items
+        # To avoid moving fixed UI elements like tabs and stat panels, we tag movable items in draw_all.
+        self.canvas.move("movable", dx, dy)
         
     def on_click(self, event):
         if self.is_dragging: return

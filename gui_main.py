@@ -419,8 +419,14 @@ class GUI(ctk.CTk):
             res = self.input_queue.get()
 
             # 过滤非预期的地图移动事件
-            if isinstance(res, dict) and res.get("action") == "move" and not is_map:
-                continue
+            if isinstance(res, dict):
+                action = res.get("action", "")
+                if action == "move" and not is_map:
+                    continue
+                # Inventory actions are always allowed if we are waiting for input,
+                # because they happen via clicking visual GUI elements, not text menu buttons.
+                # The logic handling the visual scenes (Hub, Map, Inventory) will interpret the dict.
+                return res
 
             # 白名单过滤：如果期望的是普通选项，忽略所有不在 options 列表里的字符串输入 (如连点残留的旧按钮/键盘快捷键)
             if isinstance(res, str) and res not in options:

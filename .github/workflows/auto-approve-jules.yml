@@ -1,4 +1,4 @@
-name: Auto Approve Jules Bot and wwd1115
+name: Auto Approve and Merge
 
 on:
   pull_request:
@@ -6,15 +6,24 @@ on:
 
 permissions:
   pull-requests: write
+  contents: write  # 新增：允许机器人修改和合并代码
 
 jobs:
-  auto-approve:
+  auto-approve-and-merge:
     runs-on: ubuntu-latest
-    # 核心修改：只要是机器人或 wwd1115 触发的 PR，都执行自动同意
     if: github.actor == 'google-labs-jules[bot]' || github.actor == 'wwd1115'
     steps:
+      # 第一步：自动同意 (Approve)
       - name: Approve Pull Request
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR_URL: ${{ github.event.pull_request.html_url }}
         run: gh pr review --approve "$PR_URL"
+
+      # 第二步：自动合并 (Merge)
+      - name: Merge Pull Request
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+        # 使用 --merge 方式合并。如果你习惯压缩提交，可以改成 --squash
+        run: gh pr merge --merge --admin "$PR_URL"

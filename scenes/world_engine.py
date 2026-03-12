@@ -1,6 +1,7 @@
 import random
 import time
 from utils.display import clear_screen, print_header, print_info, print_warning, print_error, print_success, show_menu, get_input
+import utils.display as disp
 from utils.combat_calc import CombatSystem
 import classes.enemy as enemy_gen
 
@@ -94,14 +95,14 @@ class ProceduralWorld:
         return enemies
 
     def enter(self):
-        import utils.display as disp
-        if not disp.GUI_INSTANCE:
-            disp.print_error("视觉世界引擎只能在 GUI 模式下运行！")
+        from utils.display import GUI_INSTANCE
+        if not GUI_INSTANCE:
+            print_error("视觉世界引擎只能在 GUI 模式下运行！")
             time.sleep(1.5)
             self.mission_completed = True
             return
             
-        disp.clear_screen()
+        clear_screen()
         print_header(f"🌀 {self.name} (Seed: {self.seed}) 难度系数: {self.base_difficulty:.1f}")
         print_info(self.description)
         
@@ -111,29 +112,29 @@ class ProceduralWorld:
         
         # Generate 2D Map
         self.generate_map()
-        disp.GUI_INSTANCE.gui_start_map_exploration(self.map_data, self.player_x, self.player_y)
-        disp.GUI_INSTANCE.gui_update_status(f"探索 {self.name} | 任务: {q_desc}")
+        GUI_INSTANCE.gui_start_map_exploration(self.map_data, self.player_x, self.player_y)
+        GUI_INSTANCE.gui_update_status(f"探索 {self.name} | 任务: {q_desc}")
         
         while self.player.is_alive() and not self.mission_completed:
-            response = disp.GUI_INSTANCE.gui_get_input({"0": "尝试撤离 (需回到起点)", "5": "查看属性与背包"}, is_map=True)
+            response = GUI_INSTANCE.gui_get_input({"0": "尝试撤离 (需回到起点)", "5": "查看属性与背包"}, is_map=True)
             if response == "0":
                 if self.map_data[self.player_y][self.player_x].get("type") == "start":
                     confirm = get_input("确认要强行撤离吗？放弃任务将无法获得结算奖励。(Y/n): ")
                     if confirm.lower() == 'y' or confirm == '':
                         break
                 else:
-                    disp.GUI_INSTANCE.gui_update_status("必须回到起点 (绿格) 才能撤离！")
+                    GUI_INSTANCE.gui_update_status("必须回到起点 (绿格) 才能撤离！")
             elif response == "5":
                 self.view_inventory_ui()
                 # Restore map view and status text after returning from inventory
-                disp.GUI_INSTANCE.gui_update_status(f"探索 {self.name} | 任务: {q_desc}")
-                disp.GUI_INSTANCE.gui_update_map_pos(self.player_x, self.player_y, self.map_data)
+                GUI_INSTANCE.gui_update_status(f"探索 {self.name} | 任务: {q_desc}")
+                GUI_INSTANCE.gui_update_map_pos(self.player_x, self.player_y, self.map_data)
             elif isinstance(response, dict) and response.get("action") == "move":
                 cx = response.get("x")
                 cy = response.get("y")
                 self.handle_movement(cx, cy)
                 
-        disp.GUI_INSTANCE.gui_end_map_exploration()
+        GUI_INSTANCE.gui_end_map_exploration()
             
         if self.player.is_alive():
             clear_screen()
@@ -361,7 +362,7 @@ class ProceduralWorld:
     def view_inventory_ui(self):
         # We temporarily borrow the inventory logic from MainGodSpace.
         # A more robust solution would be refactoring this into player/game context.
-        from utils.display import GUI_INSTANCE, print_error
+        from utils.display import GUI_INSTANCE, print_error, print_success, print_warning, print_info, get_input
         import time
         if not GUI_INSTANCE:
             print_error("视觉背包与属性面板只能在 GUI 模式下运行！")
@@ -395,16 +396,16 @@ class ProceduralWorld:
                         self.player.equipment[slot] = item
                         if old_item: self.player.inventory.append(old_item)
                         self.player.inventory.remove(item)
-                        disp.print_success(f"已装备 {item['name']}")
+                        print_success(f"已装备 {item['name']}")
                     else:
-                        disp.print_warning("该物品无法装备！")
+                        print_warning("该物品无法装备！")
             elif act_type == "unequip":
                 slot = action.get("slot")
                 if self.player.equipment[slot]:
                     item = self.player.equipment[slot]
                     self.player.equipment[slot] = None
                     self.player.inventory.append(item)
-                    disp.print_info(f"已卸下 {item['name']}")
+                    print_info(f"已卸下 {item['name']}")
             elif act_type == "use":
                 if 0 <= idx < len(self.player.inventory):
                     item = self.player.inventory[idx]
@@ -412,20 +413,20 @@ class ProceduralWorld:
                         effect = item.get("effect", {})
                         if "hp" in effect:
                             self.player.heal(effect["hp"])
-                            disp.print_success(f"使用了 {item['name']}, 恢复了 {effect['hp']} 点生命！")
+                            print_success(f"使用了 {item['name']}, 恢复了 {effect['hp']} 点生命！")
                         if "mp" in effect:
                             self.player.mp = min(self.player.max_mp, self.player.mp + effect["mp"])
-                            disp.print_success(f"使用了 {item['name']}, 恢复了 {effect['mp']} 点法力！")
+                            print_success(f"使用了 {item['name']}, 恢复了 {effect['mp']} 点法力！")
                         self.player.inventory.remove(item)
                     else:
-                        disp.print_warning("该物品无法直接使用！")
+                        print_warning("该物品无法直接使用！")
             elif act_type == "discard":
                 if 0 <= idx < len(self.player.inventory):
                     item = self.player.inventory[idx]
-                    confirm = disp.get_input(f"确定要丢弃 {item['name']} 吗？(y/N): ")
+                    confirm = get_input(f"确定要丢弃 {item['name']} 吗？(y/N): ")
                     if confirm.lower() == 'y':
                         self.player.inventory.remove(item)
-                        disp.print_info(f"丢弃了 {item['name']}")
+                        print_info(f"丢弃了 {item['name']}")
 
         # Save map state visually
         GUI_INSTANCE.gui_end_map_exploration()
@@ -442,4 +443,4 @@ class ProceduralWorld:
 
         GUI_INSTANCE.gui_end_visual_inventory()
         # The caller will restore the map exploration view.
-        disp.GUI_INSTANCE.gui_start_map_exploration(self.map_data, self.player_x, self.player_y)
+        GUI_INSTANCE.gui_start_map_exploration(self.map_data, self.player_x, self.player_y)

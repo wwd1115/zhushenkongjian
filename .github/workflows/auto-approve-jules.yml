@@ -1,22 +1,20 @@
-name: Auto Approve Jules's PRs
+name: Auto Approve Jules Bot and wwd1115
 
 on:
   pull_request:
     types: [opened, synchronize, reopened]
 
-# 配置权限，允许 GitHub Actions 机器人修改拉取请求的状态
 permissions:
   pull-requests: write
 
 jobs:
   auto-approve:
     runs-on: ubuntu-latest
-    # 核心判断：只有当发起 PR 的用户名是 'google-labs-jules[bot]' 时，才会执行后续步骤
-    if: github.actor == 'google-labs-jules[bot]' 
+    # 核心修改：只要是机器人或 wwd1115 触发的 PR，都执行自动同意
+    if: github.actor == 'google-labs-jules[bot]' || github.actor == 'wwd1115'
     steps:
       - name: Approve Pull Request
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR_URL: ${{ github.event.pull_request.html_url }}
-        # 使用 GitHub 官方 CLI 工具自动批准 PR
         run: gh pr review --approve "$PR_URL"

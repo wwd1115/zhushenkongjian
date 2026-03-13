@@ -79,6 +79,14 @@ class CombatSystem:
         while self.player.is_alive() and any(e.is_alive() for e in self.enemies):
             self.play_turn()
 
+        # Purge Dead Teammates First
+        dead_teammates = [t for t in self.player.teammates if not t.is_alive()]
+        if dead_teammates:
+            for dt in dead_teammates:
+                print_error(f"⚰️ 队友 {dt.name} 在战斗中英勇牺牲了...")
+            self.player.teammates = [t for t in self.player.teammates if t.is_alive()]
+            time.sleep(1)
+
         clear_screen()
         if self.player.is_alive():
             print_success("🔥 战斗胜利！🔥")
@@ -373,7 +381,10 @@ class CombatSystem:
             return
 
         base_dmg = float(teammate.attack)
-        is_crit = random.random() < float(getattr(teammate, 'crit_rate', 0.05))
+
+        # Give teammates a slightly smarter combat floor
+        crit_chance = max(0.1, float(getattr(teammate, 'crit_rate', 0.05)))
+        is_crit = random.random() < crit_chance
         if is_crit:
             base_dmg = float(base_dmg) * 1.5
             print_warning(f"⚡ {teammate.name} 暴击！ ⚡")
@@ -616,7 +627,12 @@ class CombatSystem:
 
         is_defending = getattr(target, 'is_defending', False)
 
-        if not is_defending and random.random() < calc_dodge_chance(enemy, target):
+        # Give teammates a 10% flat dodge floor if they are squishy
+        eff_dodge = calc_dodge_chance(enemy, target)
+        if target in self.player.teammates and eff_dodge < 0.1:
+            eff_dodge = 0.1
+
+        if not is_defending and random.random() < eff_dodge:
             if GUI_INSTANCE:
                 GUI_INSTANCE.gui_combat_event({"type": "text", "target": target.actor_id, "text": "闪避!", "color": "cyan"})
             print_success(f"漂亮！{target.name} 闪避了 {enemy.name} 的攻击。")

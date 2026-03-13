@@ -29,7 +29,10 @@ def save_game_data(player):
         "skills": player.skills,
         "stats": player.stats,
         "achievements": player.achievements,
-        "teammates": [t.to_dict() for t in player.teammates]
+        "teammates": [t.to_dict() for t in player.teammates],
+        "pets": getattr(player, "pets", []),
+        "active_pet": getattr(player, "active_pet", None),
+        "status": getattr(player, "status", [])
     }
     with open(SAVE_FILE, 'w', encoding='utf-8') as f:
         json.dump(data, f, ensure_ascii=False, indent=4)

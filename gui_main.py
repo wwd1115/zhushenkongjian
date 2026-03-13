@@ -337,10 +337,14 @@ class GUI(ctk.CTk):
             import traceback
             err_msg = traceback.format_exc()
             self.log_error(f"由于执行 {msg_type} 消息导致 GUI 错误:\n{err_msg}")
-            if hasattr(self, 'text_frame'):
-                self.text_frame.grid(row=0, column=0, padx=10, pady=10, sticky="nsew")
-                self.text_frame.tkraise()
-            self.print_text(f"[GUI 错误] 队列消息 '{msg_type}' 处理失败, 请查看 error_log.txt", "red")
+            # Try to recover visually so the player isn't stuck with a blank screen
+            try:
+                if hasattr(self, 'text_frame'):
+                    self.text_frame.grid(row=0, column=0, padx=10, pady=10, sticky="nsew")
+                    self.text_frame.tkraise()
+                self.print_text(f"[GUI 错误] 队列消息 '{msg_type}' 处理失败, 请查看 error_log.txt", "red")
+            except:
+                pass
 
     def log_error(self, message):
         import datetime

@@ -409,6 +409,13 @@ class CombatRenderer:
         attacker = self.get_stick_by_id(event.get("attacker"))
         target = self.get_stick_by_id(event.get("target"))
 
+        try:
+            self._execute_event(etype, event, attacker, target)
+        except Exception as e:
+            # Fallback to prevent crash if coordinates or widgets are invalid
+            print(f"Canvas event render failed safely: {e}")
+
+    def _execute_event(self, etype, event, attacker, target):
         if etype == "status_tick" and target:
             target.set_action("hit", 5) # Small flinch
             text = event.get("text", "")

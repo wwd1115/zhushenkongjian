@@ -179,6 +179,11 @@ class Game:
         teammates_data = data.get("teammates", [])
         self.player.teammates = [Teammate.from_dict(t) for t in teammates_data]
 
+        # Hydrate new fields safely to support old saves
+        self.player.pets = data.get("pets", [])
+        self.player.active_pet = data.get("active_pet", None)
+        self.player.status = data.get("status", [])
+
     def save_game(self):
         if not self.player:
             return

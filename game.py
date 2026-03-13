@@ -228,4 +228,18 @@ class Game:
         delete_save_data()
         self.player = None
         
+        # Ensure any residual GUI queues are cleared on death so next character starts fresh
+        from utils.display import GUI_INSTANCE
+        if GUI_INSTANCE:
+            while not GUI_INSTANCE.input_queue.empty():
+                try: GUI_INSTANCE.input_queue.get_nowait()
+                except: pass
+            while not GUI_INSTANCE.event_queue.empty():
+                try: GUI_INSTANCE.event_queue.get_nowait()
+                except: pass
+
+            GUI_INSTANCE.clear_buttons()
+            GUI_INSTANCE.gui_end_visual_combat() # Failsafe
+            GUI_INSTANCE.gui_end_enhancement_hub() # Failsafe
+
         get_input("按回车键重新开始命运的轮回...")

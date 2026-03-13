@@ -459,7 +459,13 @@ class GUI(ctk.CTk):
     def gui_end_visual_combat(self):
         self.event_queue.put({"type": "end_visual_combat"})
 
+    def _flush_input_queue(self):
+        while not self.input_queue.empty():
+            try: self.input_queue.get_nowait()
+            except queue.Empty: break
+
     def gui_start_enhancement_hub(self, nodes, unlocked_ids, player_stats=None):
+        self._flush_input_queue()
         self.event_queue.put({
             "type": "start_enhancement_hub",
             "nodes": nodes,
@@ -478,6 +484,7 @@ class GUI(ctk.CTk):
         self.event_queue.put({"type": "end_enhancement_hub"})
 
     def gui_start_map_exploration(self, map_data, px, py):
+        self._flush_input_queue()
         self.event_queue.put({
             "type": "start_map_exploration",
             "map_data": map_data,
@@ -497,6 +504,7 @@ class GUI(ctk.CTk):
         self.event_queue.put({"type": "end_map_exploration"})
 
     def gui_start_visual_inventory(self, player_data):
+        self._flush_input_queue()
         self.event_queue.put({
             "type": "start_visual_inventory",
             "player_data": player_data

@@ -47,6 +47,26 @@ class Teammate:
     def is_alive(self):
         return self.hp > 0
 
+    @property
+    def crit_rate(self):
+        return self.agi * 0.005
+
+    def to_dict(self):
+        return {
+            "name": self.name,
+            "max_hp": self.max_hp,
+            "hp": self.hp,
+            "attack": self.attack,
+            "defense": self.defense,
+            "agi": self.agi
+        }
+
+    @classmethod
+    def from_dict(cls, data):
+        tm = cls(data["name"], data["max_hp"], data["attack"], data["defense"], data["agi"])
+        tm.hp = data["hp"]
+        return tm
+
 class PetActor:
     def __init__(self, pet_data, owner_level):
         self.name = pet_data["name"]
@@ -87,21 +107,6 @@ class PetActor:
     def is_alive(self):
         return self.hp > 0
 
+    @property
     def crit_rate(self):
         return self.speed * 0.005
-
-    def to_dict(self):
-        return {
-            "name": self.name,
-            "max_hp": self.max_hp,
-            "hp": self.hp,
-            "attack": self.attack,
-            "defense": self.defense,
-            "agi": self.agi
-        }
-
-    @classmethod
-    def from_dict(cls, data):
-        tm = cls(data["name"], data["max_hp"], data["attack"], data["defense"], data["agi"])
-        tm.hp = data["hp"]
-        return tm

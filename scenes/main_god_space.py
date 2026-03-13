@@ -245,6 +245,8 @@ class MainGodSpace:
             return
 
         cost = node["data"].get("cost", 0)
+
+        # STRICT VALIDATION: Double check points immediately before transaction
         if self.player.points < cost:
             GUI_INSTANCE.gui_update_status(f"积分不足 (需{cost})")
             return
@@ -317,6 +319,8 @@ class MainGodSpace:
         except: return
 
         total_cost = get_batch_cost(stat_key, curr_val, amount)
+
+        # STRICT VALIDATION for stat enhancements
         if self.player.points < total_cost:
             affordable = 0; temp_cost = 0
             for i in range(1, amount + 1):
@@ -328,6 +332,11 @@ class MainGodSpace:
                 GUI_INSTANCE.gui_update_status("奖励点不足以进行哪怕一次本源强化！")
                 return
             amount, total_cost = affordable, temp_cost
+
+        # Final check to absolutely prevent negative points
+        if self.player.points < total_cost or total_cost < 0:
+            GUI_INSTANCE.gui_update_status("交易异常！")
+            return
 
         self.player.points -= total_cost
         self.player.stats["points_spent"] += total_cost

@@ -107,16 +107,24 @@ class Player:
 
     def update_stats(self):
         """更新衍生属性"""
+        # 防止超高等级引发整数溢出或负数防御
+        self.con = max(1, self.con)
+        self.int = max(1, self.int)
+
         # 生命值 = 体质×10 + 等级×5
-        self.max_hp = self.total_con * 10 + self.level * 5
+        self.max_hp = max(1, self.total_con * 10 + self.level * 5)
         # 精神力 = 智力×8 + 等级×3
-        self.max_mp = self.total_int * 8 + self.level * 3
+        self.max_mp = max(1, self.total_int * 8 + self.level * 3)
         
         # 防止当前HP/MP超过上限
         if self.hp > self.max_hp:
             self.hp = self.max_hp
         if self.mp > self.max_mp:
             self.mp = self.max_mp
+
+        # 确保血量不会为负数但又是活着的bug状态
+        self.hp = max(0, self.hp)
+        self.mp = max(0, self.mp)
 
     def next_level_exp(self):
         return 100 * (self.level ** 2)

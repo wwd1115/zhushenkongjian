@@ -597,11 +597,18 @@ class MainGodSpace:
                 "armor": eq.get("armor"),
                 "accessory": eq.get("accessory")
             },
+            "active_pet": getattr(p, 'active_pet', None),
             "inventory": p.inventory
         }
 
     def _handle_inventory_action(self, action):
         from utils.display import GUI_INSTANCE
+
+        if action == "rest_pet":
+            self.player.active_pet = None
+            GUI_INSTANCE.gui_update_status("灵宠已收回休息。")
+            return
+
         parts = action.split("_", 1)
 
         if parts[0] == "equip":

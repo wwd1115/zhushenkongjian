@@ -153,9 +153,9 @@ def generate_equipment_name(eq):
     
     # 后缀库 (映射特效名到英文/中文词汇)
     suffix_map = {
-        "火焰附加伤害": "之火 (of Fire)",
-        "寒冰附加伤害": "之冰 (of Frost)",
-        "吸血": "之血 (of Leech)",
+        "火焰附加": "之火 (of Fire)",
+        "寒冰附加": "之冰 (of Frost)",
+        "生命吸取": "之血 (of Leech)",
         "经验加成": "之智 (of Wisdom)"
     }
     

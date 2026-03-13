@@ -140,7 +140,8 @@ class InventoryRenderer:
         equipments = [
             ("Weapon", "武器", p.get("equipment", {}).get("weapon")),
             ("Armor", "防具", p.get("equipment", {}).get("armor")),
-            ("Accessory", "饰品", p.get("equipment", {}).get("accessory"))
+            ("Accessory", "饰品", p.get("equipment", {}).get("accessory")),
+            ("Pet", "出战灵宠", p.get("active_pet", None))
         ]
         
         slot_w, slot_h = w - pad*4, 50
@@ -330,7 +331,10 @@ class InventoryRenderer:
             self._draw_button(x + 105, btn_y, 80, 30, "丢弃", f"drop_{self.selected_item_index}")
             
         elif self.selected_item_type == "equipment":
-            self._draw_button(x + 15, btn_y, 80, 30, "卸下", f"unequip_{self.selected_item_index}")
+            if self.selected_item_index == "Pet":
+                self._draw_button(x + 15, btn_y, 80, 30, "休息", "rest_pet")
+            else:
+                self._draw_button(x + 15, btn_y, 80, 30, "卸下", f"unequip_{self.selected_item_index}")
             
     def _draw_button(self, x, y, w, h, text, action_id):
         is_hover = (self.hovered_element == f"btn_{action_id}")

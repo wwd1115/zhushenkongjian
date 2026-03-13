@@ -399,55 +399,70 @@ class ProceduralWorld:
                 "mp": p.mp, "max_mp": p.max_mp,
                 "str": p.str, "agi": p.agi, "int": p.int,
                 "con": p.con, "per": p.per, "cha": p.cha,
-                "weapon": eq["weapon"]["name"] if eq["weapon"] else "无",
-                "armor": eq["armor"]["name"] if eq["armor"] else "无",
-                "accessory": eq["accessory"]["name"] if eq["accessory"] else "无",
+                "points": p.points, "free_stats": p.free_stats,
+                "equipment": {
+                    "weapon": eq.get("weapon"),
+                    "armor": eq.get("armor"),
+                    "accessory": eq.get("accessory")
+                },
+                "active_pet": getattr(p, 'active_pet', None),
                 "inventory": p.inventory
             }
 
         def handle_inv_action(action):
-            act_type = action.get("type")
-            idx = action.get("index")
+            parts = action.split("_", 1)
+            act_type = parts[0]
+            try:
+                idx = int(parts[1]) if len(parts) > 1 else -1
+            except:
+                idx = -1
+
+            if action == "rest_pet":
+                self.player.active_pet = None
+                print_info("灵宠已收回休息。")
+                return
             if act_type == "equip":
                 if 0 <= idx < len(self.player.inventory):
                     item = self.player.inventory[idx]
-                    if item.get("type") in ["weapon", "armor", "accessory"]:
-                        slot = item["type"]
-                        old_item = self.player.equipment[slot]
-                        self.player.equipment[slot] = item
-                        if old_item: self.player.inventory.append(old_item)
-                        self.player.inventory.remove(item)
-                        print_success(f"已装备 {item['name']}")
-                    else:
-                        print_warning("该物品无法装备！")
+                    slot = item.get("type", "")
+                    if slot in ["weapon", "armor", "accessory"]:
+                        if self.player.level < item.get("level_req", 1):
+                            GUI_INSTANCE.gui_update_status(f"等级不足！需要Lv.{item.get('level_req', 1)}")
+                        else:
+                            old_item = self.player.equipment.get(slot)
+                            if old_item: self.player.inventory.append(old_item)
+                            self.player.equipment[slot] = item
+                            self.player.inventory.remove(item)
+                            self.player.update_stats()
+                            GUI_INSTANCE.gui_update_status(f"已装备: {item['name']}")
+
             elif act_type == "unequip":
-                slot = action.get("slot")
-                if self.player.equipment[slot]:
+                slot = parts[1].lower()
+                if slot in self.player.equipment and self.player.equipment[slot]:
                     item = self.player.equipment[slot]
-                    self.player.equipment[slot] = None
                     self.player.inventory.append(item)
-                    print_info(f"已卸下 {item['name']}")
+                    self.player.equipment[slot] = None
+                    self.player.update_stats()
+                    GUI_INSTANCE.gui_update_status(f"已卸下: {item['name']}")
+
             elif act_type == "use":
                 if 0 <= idx < len(self.player.inventory):
                     item = self.player.inventory[idx]
-                    if item.get("type") == "consumable":
-                        effect = item.get("effect", {})
-                        if "hp" in effect:
-                            self.player.heal(effect["hp"])
-                            print_success(f"使用了 {item['name']}, 恢复了 {effect['hp']} 点生命！")
-                        if "mp" in effect:
-                            self.player.mp = min(self.player.max_mp, self.player.mp + effect["mp"])
-                            print_success(f"使用了 {item['name']}, 恢复了 {effect['mp']} 点法力！")
+                    if item.get("type", "") == "consumable":
+                        healed = item.get("heal", 0)
+                        restored = item.get("restore_mp", 0)
+                        if healed: self.player.heal(healed)
+                        if restored: self.player.restore_mp(restored)
                         self.player.inventory.remove(item)
-                    else:
-                        print_warning("该物品无法直接使用！")
-            elif act_type == "discard":
+                        GUI_INSTANCE.gui_update_status(f"使用了: {item['name']} (恢复了生命 {healed}, 精神 {restored})")
+
+            elif act_type == "drop":
                 if 0 <= idx < len(self.player.inventory):
                     item = self.player.inventory[idx]
-                    confirm = get_input(f"确定要丢弃 {item['name']} 吗？(y/N): ")
-                    if confirm.lower() == 'y':
-                        self.player.inventory.remove(item)
-                        print_info(f"丢弃了 {item['name']}")
+                    val = item.get('value', 50)
+                    self.player.points += val
+                    self.player.inventory.remove(item)
+                    GUI_INSTANCE.gui_update_status(f"已出售: {item['name']}, 获得 {val} 积分")
 
         # Save map state visually
         GUI_INSTANCE.gui_end_map_exploration()

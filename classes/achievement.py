@@ -42,5 +42,12 @@ class AchievementSystem:
                     self.player.points += ach["reward_points"]
                 
         for ach in new_unlocks:
-            print_success(f"🏆 解锁成就: 【{ach['name']}】 - {ach['desc']} (奖励: {ach.get('reward_points', 0)} 积分)")
+            msg = f"🏆 解锁史诗成就: 【{ach['name']}】 - {ach['desc']} (奖励: {ach.get('reward_points', 0)} 积分) 🏆"
+            print_success(msg)
+
+            from utils.display import GUI_INSTANCE
+            if GUI_INSTANCE:
+                GUI_INSTANCE.gui_print("\n" + "="*40, "yellow")
+                GUI_INSTANCE.gui_print(msg, "yellow")
+                GUI_INSTANCE.gui_print("="*40 + "\n", "yellow")
             time.sleep(1.5)

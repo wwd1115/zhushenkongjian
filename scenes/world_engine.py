@@ -459,10 +459,12 @@ class ProceduralWorld:
             elif act_type == "drop":
                 if 0 <= idx < len(self.player.inventory):
                     item = self.player.inventory[idx]
-                    val = item.get('value', 50)
+                    # Apply 50% depreciation rate to prevent infinite buy/sell point exploits
+                    base_val = item.get('value', 50)
+                    val = max(1, base_val // 2)
                     self.player.points += val
                     self.player.inventory.remove(item)
-                    GUI_INSTANCE.gui_update_status(f"已出售: {item['name']}, 获得 {val} 积分")
+                    GUI_INSTANCE.gui_update_status(f"已出售(折旧): {item['name']}, 获得 {val} 积分")
 
         # Save map state visually
         GUI_INSTANCE.gui_end_map_exploration()

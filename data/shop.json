@@ -76,6 +76,28 @@
                 {"level": "全金属狂潮", "cost": 60000, "stats": {"str": 80, "con": 80, "int": 60}, "effects": [{"name": "破甲", "value": 35}]},
                 {"level": "硅基生命", "cost": 300000, "stats": {"str": 150, "con": 150, "int": 150}, "effects": [{"name": "破甲", "value": 60}]}
             ]
+        },
+        "saiyan": {
+            "name": "赛亚人血统",
+            "type": "bloodline",
+            "desc": "越濒死越强大的战斗民族！极致物理系。",
+            "levels": [
+                {"level": "下级战士", "cost": 4000, "stats": {"str": 15, "con": 10}, "effects": [{"name": "暴击率提升", "value": 5}]},
+                {"level": "巨猿化", "cost": 20000, "stats": {"str": 40, "con": 30}, "effects": [{"name": "暴击率提升", "value": 15}]},
+                {"level": "超级赛亚人", "cost": 100000, "stats": {"str": 120, "con": 100, "agi": 50}, "effects": [{"name": "狂暴打击", "value": 30}]},
+                {"level": "超赛蓝", "cost": 800000, "stats": {"str": 400, "con": 300, "agi": 200}, "effects": [{"name": "狂暴打击", "value": 80}, {"name": "全属性增强", "value": 20}]}
+            ]
+        },
+        "x_gene": {
+            "name": "X基因突变",
+            "type": "bloodline",
+            "desc": "人类进化的下一个阶段，能力千奇百怪。全能变异系。",
+            "levels": [
+                {"level": "隐性基因", "cost": 1500, "stats": {"per": 10, "int": 5}, "effects": [{"name": "伤害反射", "value": 5}]},
+                {"level": "阿尔法级", "cost": 8000, "stats": {"per": 30, "int": 20}, "effects": [{"name": "伤害反射", "value": 15}]},
+                {"level": "欧米茄级", "cost": 40000, "stats": {"per": 80, "int": 60, "con": 50}, "effects": [{"name": "法力护盾", "value": 30}, {"name": "伤害反射", "value": 30}]},
+                {"level": "凤凰之力", "cost": 500000, "stats": {"per": 200, "int": 300, "con": 100}, "effects": [{"name": "法力护盾", "value": 80}, {"name": "火焰附加", "value": 100}]}
+            ]
         }
     },
     "cultivation": {
@@ -120,6 +142,28 @@
                 {"level": "源石回路", "cost": 50000, "stats": {"int": 120}, "effects": [{"name": "法力护盾", "value": 60}]},
                 {"level": "根源接入", "cost": 200000, "stats": {"int": 250}, "effects": [{"name": "法力护盾", "value": 120}, {"name": "时间扭曲", "value": 2}]}
             ]
+        },
+        "nine_yin": {
+            "name": "九阴真经",
+            "type": "cultivation",
+            "desc": "道家武学总纲，天下武学尽在其中！敏捷/智力系。",
+            "levels": [
+                {"level": "易筋断骨篇", "cost": 2000, "stats": {"agi": 10, "int": 5}, "effects": [{"name": "闪避率提升", "value": 5}]},
+                {"level": "摧坚神爪", "cost": 8000, "stats": {"agi": 25, "int": 15}, "effects": [{"name": "闪避率提升", "value": 15}]},
+                {"level": "移魂大法", "cost": 35000, "stats": {"agi": 60, "int": 40}, "effects": [{"name": "闪避率提升", "value": 30}, {"name": "暴击率提升", "value": 10}]},
+                {"level": "武学总纲", "cost": 150000, "stats": {"agi": 150, "int": 100, "str": 80}, "effects": [{"name": "闪避率提升", "value": 60}, {"name": "全属性增强", "value": 15}]}
+            ]
+        },
+        "dark_force": {
+            "name": "西斯原力",
+            "type": "cultivation",
+            "desc": "恐惧、愤怒、憎恨...投入黑暗面的怀抱吧。",
+            "levels": [
+                {"level": "原力感知", "cost": 2500, "stats": {"per": 15, "int": 10}, "effects": [{"name": "雷电穿透", "value": 5}]},
+                {"level": "原力锁喉", "cost": 10000, "stats": {"per": 35, "int": 25, "str": 10}, "effects": [{"name": "雷电穿透", "value": 15}]},
+                {"level": "原力闪电", "cost": 40000, "stats": {"per": 90, "int": 70, "str": 30}, "effects": [{"name": "雷电穿透", "value": 40}]},
+                {"level": "黑暗尊主", "cost": 300000, "stats": {"per": 200, "int": 150, "str": 100}, "effects": [{"name": "雷电穿透", "value": 80}, {"name": "虚空之力", "value": 30}]}
+            ]
         }
     },
     "weapons": [
@@ -152,6 +196,7 @@
         {"id": "c_5", "name": "属性强化糖果", "type": "consumable", "cost": 2000, "desc": "全永久属性 +1", "effect": "stats_up_1"},
         {"id": "c_6", "name": "高级基因强化液", "type": "consumable", "cost": 8000, "desc": "永久全属性 +5", "effect": "stats_up_5"},
         {"id": "c_7", "name": "仙丹·九转金丹", "type": "consumable", "cost": 50000, "desc": "永久全属性 +30", "effect": "stats_up_30"},
-        {"id": "c_8", "name": "复活十字章", "type": "consumable", "cost": 100000, "desc": "当遭受致命伤害时自动抵消死亡一次并恢复至30%血量。", "effect": "revive"}
+        {"id": "c_8", "name": "复活十字章", "type": "consumable", "cost": 100000, "desc": "当遭受致命伤害时自动抵消死亡一次并恢复至30%血量。", "effect": "revive"},
+        {"id": "c_9", "name": "神之水滴", "type": "consumable", "cost": 500000, "desc": "蕴含创世之力的水滴，永久全属性 +100", "effect": "stats_up_100"}
     ]
 }

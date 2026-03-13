@@ -46,6 +46,12 @@ class CombatSystem:
             t.actor_id = f"p_{i+1}"
             t.is_defending = False
             
+        # Pet
+        self.pet_actor = None
+        if getattr(self.player, 'active_pet', None):
+            from classes.teammate import PetActor
+            self.pet_actor = PetActor(self.player.active_pet, self.player.level)
+
         self.turn = 1
 
     def start_combat(self):
@@ -54,6 +60,8 @@ class CombatSystem:
             for t in self.player.teammates:
                 if t.is_alive():
                     p_team_data.append({"id": t.actor_id, "name": t.name, "hp": t.hp, "max_hp": t.max_hp})
+            if self.pet_actor and self.pet_actor.is_alive():
+                p_team_data.append({"id": self.pet_actor.actor_id, "name": self.pet_actor.name, "hp": self.pet_actor.hp, "max_hp": self.pet_actor.max_hp})
                     
             e_team_data = []
             for e in self.enemies:
@@ -130,6 +138,10 @@ class CombatSystem:
             print_info(f"[队友] {t.name} 生命: {t.hp}/{t.max_hp}")
             t.is_defending = False
             
+        if self.pet_actor and self.pet_actor.is_alive():
+            print_info(f"[灵宠] {self.pet_actor.name} 生命: {self.pet_actor.hp}/{self.pet_actor.max_hp}")
+            self.pet_actor.is_defending = False
+
         print("-" * 30)
         
         alive_enemies = [e for e in self.enemies if e.is_alive()]
@@ -144,6 +156,9 @@ class CombatSystem:
             actors.append((self.player, self.player.agi))
         for t in alive_teammates:
             actors.append((t, getattr(t, 'agi', 10)))
+        if self.pet_actor and self.pet_actor.is_alive():
+            actors.append((self.pet_actor, self.pet_actor.speed))
+
         for e in alive_enemies:
             e.is_defending = False
             actors.append((e, e.speed))
@@ -182,8 +197,27 @@ class CombatSystem:
             actor.process_status()
             time.sleep(0.2)
 
+            # Check for Revive Logic if target dies from poison/burn
+            if not self.player.is_alive():
+                has_revive = False
+                for item in self.player.inventory:
+                    if getattr(item, 'get', lambda x: None)("effect") == "revive":
+                        has_revive = True
+                        self.player.inventory.remove(item)
+                        break
+                if has_revive:
+                    revive_hp = int(self.player.max_hp * 0.3)
+                    self.player.hp = revive_hp
+                    if GUI_INSTANCE:
+                        GUI_INSTANCE.gui_combat_event({"type": "heal", "target": self.player.actor_id, "amount": revive_hp, "hp": self.player.hp})
+                        GUI_INSTANCE.gui_combat_event({"type": "text", "target": self.player.actor_id, "text": "复活!", "color": "yellow"})
+                    print_success("🌟 你的生命值归零！但【复活十字章】散发出耀眼的光芒，将你从死亡边缘拉了回来！")
+
             if not actor.is_alive() or skip_turn:
                 continue
+
+            if not self.player.is_alive() or not any(e.is_alive() for e in self.enemies):
+                break
                 
             if actor == self.player:
                 escaped = self.handle_player_action(alive_enemies)
@@ -194,9 +228,16 @@ class CombatSystem:
                 if alive_enemies_cur:
                     target = random.choice(alive_enemies_cur)
                     self.teammate_attack(actor, target)
+            elif self.pet_actor and actor == self.pet_actor:
+                alive_enemies_cur = [e for e in self.enemies if e.is_alive()]
+                if alive_enemies_cur:
+                    target = random.choice(alive_enemies_cur)
+                    self.pet_attack(actor, target)
             elif actor in self.enemies:
                 possible_targets = [self.player] if self.player.is_alive() else []
                 possible_targets.extend([t for t in self.player.teammates if t.is_alive()])
+                if self.pet_actor and self.pet_actor.is_alive():
+                    possible_targets.append(self.pet_actor)
                 if possible_targets:
                     target = random.choice(possible_targets)
                     self.enemy_attack(actor, target)
@@ -346,7 +387,82 @@ class CombatSystem:
             })
             
         print_success(f"{teammate.name} 对 {target.name} 造成了 {dmg_dealt} 点伤害！")
+
+        # Boss Phase 2 Check
+        if hasattr(target, 'max_hp') and target.max_hp >= 1000 and "首领" in getattr(target, 'name', '') and target.hp > 0 and target.hp <= target.max_hp * 0.5 and not getattr(target, 'phase2_triggered', False):
+            target.phase2_triggered = True
+            target.attack = int(target.attack * 1.5)
+            target.speed += 10
+            target.status = [] # Clear negative statuses
+            if GUI_INSTANCE:
+                GUI_INSTANCE.gui_combat_event({"type": "text", "target": target.actor_id, "text": "狂暴!", "color": "magenta"})
+            print_error(f"⚠️ 警告：{target.name} 进入二阶段【狂暴】状态！解除了所有异常，攻击力和速度大幅提升！⚠️")
+
         time.sleep(0.3)
+
+    def pet_attack(self, pet, target):
+        if pet.skill == "heal":
+            heal_amt = pet.attack * 2
+            self.player.heal(heal_amt)
+            if GUI_INSTANCE:
+                GUI_INSTANCE.gui_combat_event({"type": "heal", "target": self.player.actor_id, "amount": heal_amt, "hp": self.player.hp})
+            print_success(f"💖 {pet.name} 释放了治愈魔法，为你恢复了 {heal_amt} 点生命！")
+            time.sleep(0.5)
+            return
+
+        if GUI_INSTANCE:
+            vfx_color = "white"
+            if pet.skill == "fire": vfx_color = "orange"
+            elif pet.skill == "laser": vfx_color = "cyan"
+            elif pet.skill == "poison": vfx_color = "purple"
+
+            skill_event = {
+                "type": "skill",
+                "attacker": pet.actor_id,
+                "target": target.actor_id,
+                "skill_name": "攻击",
+                "color": vfx_color,
+                "hit_event": None
+            }
+            GUI_INSTANCE.gui_combat_event(skill_event)
+            time.sleep(0.4)
+
+        if random.random() < calc_dodge_chance(pet, target):
+            if GUI_INSTANCE:
+                GUI_INSTANCE.gui_combat_event({"type": "text", "target": target.actor_id, "text": "闪避!", "color": "cyan"})
+            print_info(f"未命中！{target.name} 闪避了 {pet.name} 的攻击。")
+            time.sleep(0.3)
+            return
+
+        base_dmg = float(pet.attack)
+        dmg_dealt = target.take_damage(int(base_dmg))
+
+        if pet.skill == "fire" and random.random() < 0.4:
+            target.add_status("灼烧", duration=2, power=pet.attack // 2)
+            print_warning(f"🔥 {pet.name} 点燃了 {target.name}！")
+        elif pet.skill == "poison" and random.random() < 0.5:
+            target.add_status("中毒", duration=3, power=pet.attack // 2)
+            print_warning(f"🤢 {pet.name} 让 {target.name} 中毒了！")
+
+        if GUI_INSTANCE:
+            GUI_INSTANCE.gui_combat_event({
+                "type": "hit", "target": target.actor_id, "damage": dmg_dealt,
+                "hp": target.hp, "crit": False, "color": "white"
+            })
+
+        print_success(f"🐾 {pet.name} 攻击了 {target.name}，造成了 {dmg_dealt} 点伤害！")
+
+        # Boss Phase 2 Check
+        if hasattr(target, 'max_hp') and target.max_hp >= 1000 and "首领" in getattr(target, 'name', '') and target.hp > 0 and target.hp <= target.max_hp * 0.5 and not getattr(target, 'phase2_triggered', False):
+            target.phase2_triggered = True
+            target.attack = int(target.attack * 1.5)
+            target.speed += 10
+            target.status = [] # Clear negative statuses
+            if GUI_INSTANCE:
+                GUI_INSTANCE.gui_combat_event({"type": "text", "target": target.actor_id, "text": "狂暴!", "color": "magenta"})
+            print_error(f"⚠️ 警告：{target.name} 进入二阶段【狂暴】状态！解除了所有异常，攻击力和速度大幅提升！⚠️")
+
+        time.sleep(0.4)
 
     def use_skill(self, skill, target):
         print_info(f"{self.player.name} 释放技能：【{skill['name']}】！")
@@ -473,6 +589,16 @@ class CombatSystem:
         if frost_dmg > 0: msg += f" (❄️寒冰+{frost_dmg})"
         if true_dmg > 0: msg += f" (⚔️真实+{true_dmg})"
         print_success(msg)
+
+        # Boss Phase 2 Check
+        if hasattr(target, 'max_hp') and target.max_hp >= 1000 and "首领" in getattr(target, 'name', '') and target.hp > 0 and target.hp <= target.max_hp * 0.5 and not getattr(target, 'phase2_triggered', False):
+            target.phase2_triggered = True
+            target.attack = int(target.attack * 1.5)
+            target.speed += 10
+            target.status = [] # Clear negative statuses
+            if GUI_INSTANCE:
+                GUI_INSTANCE.gui_combat_event({"type": "text", "target": target.actor_id, "text": "狂暴!", "color": "magenta"})
+            print_error(f"⚠️ 警告：{target.name} 进入二阶段【狂暴】状态！解除了所有异常，攻击力和速度大幅提升！⚠️")
         
         if leech_pct > 0:
             heal_amt = max(1, int(dmg_dealt * (leech_pct / 100.0)))
@@ -525,5 +651,32 @@ class CombatSystem:
             if GUI_INSTANCE:
                 GUI_INSTANCE.gui_combat_event({"type": "hit", "target": enemy.actor_id, "damage": thorns_dmg, "hp": enemy.hp, "crit": False, "color": "magenta"})
             print_warning(f"🛡️ 伤害反射！{enemy.name} 受到了 {thorns_dmg} 点反弹伤害！")
+
+        # Boss Phase 2 Check (triggered if they hurt themselves via thorns)
+        if hasattr(enemy, 'max_hp') and enemy.max_hp >= 1000 and "首领" in getattr(enemy, 'name', '') and enemy.hp > 0 and enemy.hp <= enemy.max_hp * 0.5 and not getattr(enemy, 'phase2_triggered', False):
+            enemy.phase2_triggered = True
+            enemy.attack = int(enemy.attack * 1.5)
+            enemy.speed += 10
+            enemy.status = [] # Clear negative statuses
+            if GUI_INSTANCE:
+                GUI_INSTANCE.gui_combat_event({"type": "text", "target": enemy.actor_id, "text": "狂暴!", "color": "magenta"})
+                GUI_INSTANCE.gui_combat_event({"type": "heal", "target": enemy.actor_id, "amount": 0, "hp": enemy.hp}) # Trigger particle effect
+            print_error(f"⚠️ 警告：{enemy.name} 进入二阶段【狂暴】状态！解除了所有异常，攻击力和速度大幅提升！⚠️")
+
+        # Check for Revive Logic if target dies
+        if target == self.player and not self.player.is_alive():
+            has_revive = False
+            for item in self.player.inventory:
+                if getattr(item, 'get', lambda x: None)("effect") == "revive":
+                    has_revive = True
+                    self.player.inventory.remove(item)
+                    break
+            if has_revive:
+                revive_hp = int(self.player.max_hp * 0.3)
+                self.player.hp = revive_hp
+                if GUI_INSTANCE:
+                    GUI_INSTANCE.gui_combat_event({"type": "heal", "target": self.player.actor_id, "amount": revive_hp, "hp": self.player.hp})
+                    GUI_INSTANCE.gui_combat_event({"type": "text", "target": self.player.actor_id, "text": "复活!", "color": "yellow"})
+                print_success("🌟 你的生命值归零！但【复活十字章】散发出耀眼的光芒，将你从死亡边缘拉了回来！")
 
         time.sleep(0.4)

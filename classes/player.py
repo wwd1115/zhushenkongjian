@@ -40,6 +40,8 @@ class Player:
         self.skills = []
         self.inventory = []
         self.teammates = []
+        self.pets = []           # 拥有的宠物列表
+        self.active_pet = None   # 当前出战的宠物
         
         self.bloodline = None    # 血统插槽
         self.cultivation = None  # 功法插槽
@@ -221,10 +223,11 @@ class Player:
         
         bl_name = self.bloodline["name"] + f" ({self.bloodline.get('level', '')})" if getattr(self, 'bloodline', None) else "无"
         cu_name = self.cultivation["name"] + f" ({self.cultivation.get('level', '')})" if getattr(self, 'cultivation', None) else "无"
+        pet_name = self.active_pet["name"] if getattr(self, 'active_pet', None) else "无"
         
         status_lines = [
             f"--- 轮回者: {self.name} | Lv.{self.level} | 积分: {self.points} | 道德: {self.morality} ---",
-            f"[血统体系]: {bl_name}   |   [修真功法]: {cu_name}",
+            f"[血统体系]: {bl_name}   |   [修真功法]: {cu_name}   |   [出战宠物]: {pet_name}",
             f"生命值: {hp_bar}  精神力: {mp_bar}",
             f"力量(STR): {self.str}(+{self.total_str-self.str})  敏捷(AGI): {self.agi}(+{self.total_agi-self.agi})  智力(INT): {self.int}(+{self.total_int-self.int})",
             f"体质(CON): {self.con}(+{self.total_con-self.con})  感知(PER): {self.per}(+{self.total_per-self.per})  魅力(CHA): {self.cha}(+{self.total_cha-self.cha})",

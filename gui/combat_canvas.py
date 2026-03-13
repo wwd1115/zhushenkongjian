@@ -360,7 +360,18 @@ class CombatRenderer:
         # Player formation (left side)
         for i, pd in enumerate(player_data_list):
             cx = width * 0.4 - (i * 70) # cascade backwards
-            s = Stickman(self.canvas, cx, cy_base, color="#00BFFF", direction=1)
+            color = "#00BFFF"
+            scale = 2.0
+            y_offset = 0
+
+            # Make pet smaller and float slightly
+            if pd.get("id") == "pet_0":
+                color = "#FFD700"
+                scale = 1.0
+                y_offset = -40
+
+            s = Stickman(self.canvas, cx, cy_base + y_offset, color=color, direction=1)
+            s.scale = scale
             s.name = pd.get("name", "Player")
             s.actor_id = pd.get("id", s.name)
             s.update_hp(pd.get("hp", 100), pd.get("max_hp", 100))

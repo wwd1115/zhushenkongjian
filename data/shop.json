@@ -153,5 +153,11 @@
         {"id": "c_6", "name": "高级基因强化液", "type": "consumable", "cost": 8000, "desc": "永久全属性 +5", "effect": "stats_up_5"},
         {"id": "c_7", "name": "仙丹·九转金丹", "type": "consumable", "cost": 50000, "desc": "永久全属性 +30", "effect": "stats_up_30"},
         {"id": "c_8", "name": "复活十字章", "type": "consumable", "cost": 100000, "desc": "当遭受致命伤害时自动抵消死亡一次并恢复至30%血量。", "effect": "revive"}
+    ],
+    "pets": [
+        {"id": "p_1", "name": "烈焰幼龙", "type": "pet", "cost": 5000, "desc": "喷吐微型火焰的幼龙。", "hp": 200, "attack": 40, "speed": 12, "defense": 10, "skill": "fire"},
+        {"id": "p_2", "name": "机械浮游炮", "type": "pet", "cost": 8000, "desc": "自动追踪敌人的火力支援装置。", "hp": 150, "attack": 60, "speed": 20, "defense": 20, "skill": "laser"},
+        {"id": "p_3", "name": "虚空史莱姆", "type": "pet", "cost": 15000, "desc": "能吸收伤害并在攻击时附带剧毒。", "hp": 400, "attack": 30, "speed": 8, "defense": 30, "skill": "poison"},
+        {"id": "p_4", "name": "神圣独角兽", "type": "pet", "cost": 50000, "desc": "能治疗主人的传说生物。", "hp": 800, "attack": 80, "speed": 25, "defense": 50, "skill": "heal"}
     ]
 }

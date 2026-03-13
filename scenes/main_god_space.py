@@ -345,7 +345,8 @@ class MainGodSpace:
                 "1": "武器库",
                 "2": "防具库",
                 "3": "道具与消耗品",
-                "4": "🎲 随机装备盲盒 (抽取极品词条!)",
+                "4": "召唤兽与灵宠",
+                "5": "🎲 随机装备盲盒 (抽取极品词条!)",
                 "0": "返回"
             }
             choice = show_menu("商品分类", options)
@@ -354,7 +355,88 @@ class MainGodSpace:
             elif choice == "1": self.buy_items("weapons")
             elif choice == "2": self.buy_items("armors")
             elif choice == "3": self.buy_items("consumables")
-            elif choice == "4": self.buy_gacha()
+            elif choice == "4": self.buy_pets()
+            elif choice == "5": self.buy_gacha()
+
+    def buy_pets(self):
+        while True:
+            clear_screen()
+            pets = self.shop_data.get("pets", [])
+            print_header("主神空间 - 宠物契约大厅")
+            print_info(f"当前积分: {self.player.points}")
+            print_warning("同一时间只能出战一只宠物，但您可以拥有多只。")
+
+            options = {}
+            for idx, pet in enumerate(pets):
+                options[str(idx+1)] = f"{pet['name']} - {pet.get('cost', 9999)}积分 ({pet.get('desc', '')})"
+
+            options["C"] = "管理当前拥有的宠物"
+            options["0"] = "返回"
+
+            choice = show_menu("请选择要缔结契约的宠物", options)
+            if choice == "0": break
+            elif choice == "C":
+                self.manage_pets()
+                continue
+
+            try:
+                choice_idx = int(choice) - 1
+                if 0 <= choice_idx < len(pets):
+                    pet_data = pets[choice_idx].copy()
+                    price = pet_data.get('cost', 999999)
+
+                    if any(p.get("id") == pet_data.get("id") for p in getattr(self.player, 'pets', [])):
+                        print_error("你已经拥有该灵宠了！")
+                        time.sleep(1.5)
+                        continue
+
+                    if self.player.points >= price:
+                        self.player.points -= price
+                        self.player.stats["points_spent"] += price
+                        if not hasattr(self.player, 'pets'):
+                            self.player.pets = []
+                        self.player.pets.append(pet_data)
+                        if getattr(self.player, 'active_pet', None) is None:
+                            self.player.active_pet = pet_data
+                            print_success(f"契约成功！获得了 {pet_data['name']}，并自动设置为出战状态！")
+                        else:
+                            print_success(f"契约成功！获得了 {pet_data['name']}！")
+                        self.player.update_stats()
+                    else:
+                        print_error("积分不足！")
+                    time.sleep(1.5)
+            except ValueError:
+                pass
+
+    def manage_pets(self):
+        while True:
+            clear_screen()
+            print_header("灵宠管理")
+            my_pets = getattr(self.player, 'pets', [])
+            active = getattr(self.player, 'active_pet', None)
+
+            if not my_pets:
+                print_error("你当前没有任何灵宠！")
+                time.sleep(1.5)
+                break
+
+            options = {}
+            for idx, p in enumerate(my_pets):
+                status = "[出战中] " if active and active.get("id") == p.get("id") else ""
+                options[str(idx+1)] = f"{status}{p['name']} (HP: {p.get('hp')} | ATK: {p.get('attack')})"
+
+            options["0"] = "返回"
+            choice = show_menu("选择你要出战的灵宠", options)
+
+            if choice == "0": break
+            try:
+                idx = int(choice) - 1
+                if 0 <= idx < len(my_pets):
+                    self.player.active_pet = my_pets[idx]
+                    print_success(f"已将 {my_pets[idx]['name']} 设置为出战灵宠！")
+                    time.sleep(1)
+            except ValueError:
+                pass
 
     def buy_gacha(self):
         while True:

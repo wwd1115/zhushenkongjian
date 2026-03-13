@@ -387,7 +387,7 @@ class CombatRenderer:
     def process_event(self, event):
         # We push events to a queue instead of processing immediately 
         # so we can control timing (e.g., wait for projectile to hit before showing damage)
-        if event.get("type") in ["attack", "skill", "end_battle"]:
+        if event.get("type") in ["attack", "skill", "end_battle", "status_tick"]:
             self.event_queue.append(event)
         else:
             # Immediate resolution for internal events or specific text updates
@@ -398,7 +398,21 @@ class CombatRenderer:
         attacker = self.get_stick_by_id(event.get("attacker"))
         target = self.get_stick_by_id(event.get("target"))
 
-        if etype == "attack" and attacker:
+        if etype == "status_tick" and target:
+            target.set_action("hit", 5) # Small flinch
+            text = event.get("text", "")
+            color = event.get("color", "white")
+            self.add_floating_text(target, text, color)
+
+            # Spawn some status particles
+            if color == "purple": # Poison
+                self.particles.append(ParticleSystem(self.canvas, target.x, target.y - 20, "purple", count=5, p_type="heal"))
+            elif color == "orange": # Burn
+                self.particles.append(ParticleSystem(self.canvas, target.x, target.y - 20, "orange", count=5, p_type="explosion"))
+            elif color == "cyan": # Freeze
+                self.particles.append(ParticleSystem(self.canvas, target.x, target.y - 20, "cyan", count=5, p_type="explosion"))
+
+        elif etype == "attack" and attacker:
             attacker.set_action("attack", 20)
         elif etype == "hit" and target:
             target.set_action("hit", 10)
@@ -470,6 +484,8 @@ class CombatRenderer:
             # Add delay before next event if needed, e.g. for animations to play out
             if next_evt.get("type") in ["attack", "skill"]:
                 self.event_timer = 20 # wait 20 frames before processing next major action
+            elif next_evt.get("type") == "status_tick":
+                self.event_timer = 10 # wait 10 frames before processing next major action
                 
         if self.event_timer > 0:
             self.event_timer -= 1

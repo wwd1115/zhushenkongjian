@@ -13,6 +13,22 @@ class Enemy:
         self.drop_points = drop_points
         self.status = []
 
+    def add_status(self, effect_name, duration, power):
+        for s in self.status:
+            if s["name"] == effect_name:
+                s["duration"] = max(s["duration"], duration)
+                s["power"] = max(s["power"], power)
+                return
+        self.status.append({"name": effect_name, "duration": duration, "power": power})
+
+    def process_status(self):
+        active_status = []
+        for s in self.status:
+            s["duration"] -= 1
+            if s["duration"] > 0:
+                active_status.append(s)
+        self.status = active_status
+
     def take_damage(self, amount):
         actual_damage = max(1, amount - self.defense)
         self.hp -= actual_damage

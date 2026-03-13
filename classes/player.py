@@ -28,6 +28,7 @@ class Player:
         self.achievements = []
         
         # 当前状态
+        self.status = []
         self.status_effects = []
         
         # 战斗属性（会通过update_stats更新）
@@ -189,6 +190,23 @@ class Player:
 
     def is_alive(self):
         return self.hp > 0
+
+    def add_status(self, effect_name, duration, power):
+        # Prevent duplicate status stacking, just refresh duration
+        for s in self.status:
+            if s["name"] == effect_name:
+                s["duration"] = max(s["duration"], duration)
+                s["power"] = max(s["power"], power)
+                return
+        self.status.append({"name": effect_name, "duration": duration, "power": power})
+
+    def process_status(self):
+        active_status = []
+        for s in self.status:
+            s["duration"] -= 1
+            if s["duration"] > 0:
+                active_status.append(s)
+        self.status = active_status
         
     def check_achievements(self):
         from classes.achievement import AchievementSystem

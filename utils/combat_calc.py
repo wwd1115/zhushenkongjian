@@ -157,6 +157,33 @@ class CombatSystem:
                 
             if not self.player.is_alive() or not any(e.is_alive() for e in self.enemies):
                 break
+
+            # 状态异常结算
+            skip_turn = False
+            for s in actor.status:
+                if s["name"] == "中毒":
+                    dmg = s["power"]
+                    actor.hp = max(0, actor.hp - dmg)
+                    if GUI_INSTANCE:
+                        GUI_INSTANCE.gui_combat_event({"type": "status_tick", "target": actor.actor_id, "text": f"毒-{dmg}", "color": "purple"})
+                    print_warning(f"🤢 {actor.name} 受到中毒伤害 {dmg} 点！")
+                elif s["name"] == "灼烧":
+                    dmg = s["power"]
+                    actor.hp = max(0, actor.hp - dmg)
+                    if GUI_INSTANCE:
+                        GUI_INSTANCE.gui_combat_event({"type": "status_tick", "target": actor.actor_id, "text": f"🔥-{dmg}", "color": "orange"})
+                    print_warning(f"🔥 {actor.name} 受到灼烧伤害 {dmg} 点！")
+                elif s["name"] == "冰冻":
+                    skip_turn = True
+                    if GUI_INSTANCE:
+                        GUI_INSTANCE.gui_combat_event({"type": "status_tick", "target": actor.actor_id, "text": "冻结!", "color": "cyan"})
+                    print_warning(f"❄️ {actor.name} 被冰冻了，无法行动！")
+
+            actor.process_status()
+            time.sleep(0.2)
+
+            if not actor.is_alive() or skip_turn:
+                continue
                 
             if actor == self.player:
                 escaped = self.handle_player_action(alive_enemies)
@@ -342,6 +369,17 @@ class CombatSystem:
                 "hit_event": None
             }
             
+        if skill["effect"] in ["dmg_fire", "aoe_meteor", "dmg_fire_dot"]:
+            target.add_status("灼烧", duration=3, power=int(self.player.total_int * 0.5))
+            print_warning(f"🔥 {target.name} 被技能点燃了！")
+        elif skill["effect"] == "dmg_ice":
+            if random.random() < 0.4:
+                target.add_status("冰冻", duration=1, power=0)
+                print_warning(f"❄️ {target.name} 被技能冻结了！")
+        elif skill["effect"] == "dmg_poison_dot":
+            target.add_status("中毒", duration=4, power=int(self.player.total_int * 0.8))
+            print_warning(f"🤢 {target.name} 被技能施加了剧毒！")
+
         if skill["effect"] == "atk_up":
             if GUI_INSTANCE:
                 GUI_INSTANCE.gui_combat_event(skill_event)
@@ -391,15 +429,28 @@ class CombatSystem:
         leech_pct = 0
         true_dmg = 0
 
+        poison_power = 0
         for eff in all_effs:
             if eff.get("name") == "火焰附加": fire_dmg += int(eff.get("value", 0))
             elif eff.get("name") == "寒冰附加": frost_dmg += int(eff.get("value", 0))
+            elif eff.get("name") == "剧毒蔓延": poison_power += int(eff.get("value", 0))
             elif eff.get("name") == "真实伤害": true_dmg += int(eff.get("value", 0))
             elif eff.get("name") == "生命吸取" or eff.get("name") == "吸血": leech_pct += int(eff.get("value", 0))
                     
         total_dmg = int(float(base_dmg) + float(fire_dmg) + float(frost_dmg))
         dmg_dealt = target.take_damage(total_dmg)
         
+        # Apply Status Ailments
+        if fire_dmg > 0 and random.random() < 0.3:
+            target.add_status("灼烧", duration=3, power=fire_dmg)
+            print_warning(f"🔥 {target.name} 被点燃了！")
+        if frost_dmg > 0 and random.random() < 0.2:
+            target.add_status("冰冻", duration=1, power=0)
+            print_warning(f"❄️ {target.name} 被冻结了！")
+        if poison_power > 0 and random.random() < 0.5:
+            target.add_status("中毒", duration=4, power=poison_power)
+            print_warning(f"🤢 {target.name} 中毒了！")
+
         # Add true damage after armor reduction
         if true_dmg > 0:
             target.hp = max(0, target.hp - true_dmg)

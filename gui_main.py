@@ -459,6 +459,9 @@ class GUI(ctk.CTk):
     def gui_end_visual_combat(self):
         self.event_queue.put({"type": "end_visual_combat"})
 
+    def gui_hard_reset_view(self):
+        self.event_queue.put({"type": "hard_reset_view"})
+
     def _flush_input_queue(self):
         while not self.input_queue.empty():
             try: self.input_queue.get_nowait()

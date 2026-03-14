@@ -226,8 +226,15 @@ class Game:
         meta.add_marks(marks_gained)
         
         delete_save_data()
+
+        # Deep memory unbind to prevent old character data from bleeding into the new run
         self.player = None
-        
+        import gc
+        gc.collect()
+
+        # Completely reset the god space to refresh loaded shop data / events
+        self.god_space = MainGodSpace(self)
+
         # Ensure any residual GUI queues are cleared on death so next character starts fresh
         from utils.display import GUI_INSTANCE
         if GUI_INSTANCE:
@@ -239,7 +246,6 @@ class Game:
                 except: pass
 
             GUI_INSTANCE.clear_buttons()
-            GUI_INSTANCE.gui_end_visual_combat() # Failsafe
-            GUI_INSTANCE.gui_end_enhancement_hub() # Failsafe
+            GUI_INSTANCE.gui_hard_reset_view() # Ultimate Failsafe
 
         get_input("按回车键重新开始命运的轮回...")

@@ -184,7 +184,7 @@ class CombatSystem:
             actors.append((e, e.speed))
             
         actors.sort(key=lambda x: x[1], reverse=True)
-        escaped = False
+        escaped_this_turn = False
         
         for actor, speed in actors:
             if not actor.is_alive():
@@ -245,8 +245,8 @@ class CombatSystem:
                 break
                 
             if actor == self.player:
-                escaped = self.handle_player_action(alive_enemies)
-                if escaped:
+                escaped_this_turn = self.handle_player_action(alive_enemies)
+                if escaped_this_turn:
                     break
             elif actor in self.player.teammates:
                 alive_enemies_cur = [e for e in self.enemies if e.is_alive()]
@@ -268,7 +268,7 @@ class CombatSystem:
                     self.enemy_attack(actor, target)
                     
         self.turn += 1
-        return escaped
+        return escaped_this_turn
 
     def handle_player_action(self, alive_enemies) -> bool:
         options = {

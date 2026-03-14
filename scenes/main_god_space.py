@@ -557,10 +557,8 @@ class MainGodSpace:
                 self.player.points -= 100
                 self.player.hp = self.player.max_hp
                 self.player.mp = self.player.max_mp
-                self.player.status_effects.clear()
-                self.player.status.clear()
+                self.player.purge_all_statuses()
                 for teammate in self.player.teammates:
-                    teammate.status.clear()
                     teammate.hp = teammate.max_hp
                 print_success("高级恢复完毕，你和队友的状态全满，所有异常清除！")
             else:

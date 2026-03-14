@@ -374,6 +374,9 @@ class ProceduralWorld:
         if self.player.is_alive():
             GUI_INSTANCE.gui_update_map_pos(self.player_x, self.player_y, self.map_data) # Update natively without redraw
             
+            # Post-combat/event: ensure no lingering temporary statuses (like freeze) persist onto the map
+            self.player.purge_all_statuses()
+
         # Global Revive Check for Map Events (Traps, Chests, Shrines)
         if not self.player.is_alive():
             has_revive = False

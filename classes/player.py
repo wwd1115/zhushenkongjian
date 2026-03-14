@@ -67,42 +67,42 @@ class Player:
     def total_str(self):
         val = self.str + self._get_base_bonus("str")
         for eq in self.equipment.values():
-            if eq: val += eq.get("str", 0)
+            if eq and isinstance(eq, dict): val += int(eq.get("str") or 0)
         return val
 
     @property
     def total_agi(self):
         val = self.agi + self._get_base_bonus("agi")
         for eq in self.equipment.values():
-            if eq: val += eq.get("agi", 0)
+            if eq and isinstance(eq, dict): val += int(eq.get("agi") or 0)
         return val
 
     @property
     def total_int(self):
         val = self.int + self._get_base_bonus("int")
         for eq in self.equipment.values():
-            if eq: val += eq.get("int", 0)
+            if eq and isinstance(eq, dict): val += int(eq.get("int") or 0)
         return val
 
     @property
     def total_con(self):
         val = self.con + self._get_base_bonus("con")
         for eq in self.equipment.values():
-            if eq: val += eq.get("con", 0)
+            if eq and isinstance(eq, dict): val += int(eq.get("con") or 0)
         return val
 
     @property
     def total_per(self):
         val = self.per + self._get_base_bonus("per")
         for eq in self.equipment.values():
-            if eq: val += eq.get("per", 0)
+            if eq and isinstance(eq, dict): val += int(eq.get("per") or 0)
         return val
 
     @property
     def total_cha(self):
         val = self.cha + self._get_base_bonus("cha")
         for eq in self.equipment.values():
-            if eq: val += eq.get("cha", 0)
+            if eq and isinstance(eq, dict): val += int(eq.get("cha") or 0)
         return val
 
     def update_stats(self):
@@ -217,7 +217,14 @@ class Player:
             if s["duration"] > 0:
                 active_status.append(s)
         self.status = active_status
-        
+
+    def purge_all_statuses(self):
+        """Aggressively clear all status ailments for the player and teammates."""
+        self.status = []
+        self.status_effects = []
+        for t in self.teammates:
+            t.status = []
+
     def check_achievements(self):
         from classes.achievement import AchievementSystem
         ach_sys = AchievementSystem(self)

@@ -259,6 +259,9 @@ class ProceduralWorld:
                             print_success(f"战斗掉落: 获得了 {eq['name']}")
                             self.player.inventory.append(eq)
                             time.sleep(1)
+                else:
+                    # Player fled or tied. Push them back visually to a safe adjacent square if possible.
+                    room["cleared"] = False
             elif room["type"] == "treasure":
                 pts = self.rng.randint(50, 200)
                 GUI_INSTANCE.gui_update_status(f"发现宝箱！积分+{pts}")
@@ -367,6 +370,8 @@ class ProceduralWorld:
                     print_success(f"💎 Boss轰然倒下...掉落了极品装备: {eq['name']} 💎")
                     self.player.inventory.append(eq)
                     time.sleep(2)
+                else:
+                    room["cleared"] = False
         else:
             GUI_INSTANCE.gui_update_status("探索安全区域。")
             

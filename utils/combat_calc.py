@@ -145,7 +145,9 @@ class CombatSystem:
         get_input("按回车键结束战斗...")
         if GUI_INSTANCE:
             GUI_INSTANCE.gui_end_visual_combat()
-        return self.player.is_alive()
+
+        # Return True ONLY if player lived AND they didn't escape/draw (meaning enemies are dead)
+        return self.player.is_alive() and not escaped_or_draw
 
     def play_turn(self):
         clear_screen()

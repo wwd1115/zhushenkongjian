@@ -374,11 +374,26 @@ class ProceduralWorld:
         if self.player.is_alive():
             GUI_INSTANCE.gui_update_map_pos(self.player_x, self.player_y, self.map_data) # Update natively without redraw
             
+        # Global Revive Check for Map Events (Traps, Chests, Shrines)
+        if not self.player.is_alive():
+            has_revive = False
+            for item in self.player.inventory:
+                if getattr(item, 'get', lambda x: None)("effect") == "revive":
+                    has_revive = True
+                    self.player.inventory.remove(item)
+                    break
+            if has_revive:
+                self.player.hp = int(self.player.max_hp * 0.3)
+                if GUI_INSTANCE:
+                    GUI_INSTANCE.gui_print("🌟 你的生命值归零！但【复活十字章】散发出耀眼的光芒，将你从死亡边缘拉了回来！", "yellow")
+                    GUI_INSTANCE.gui_update_status("触发复活！")
+
         # Check completion
-        if q_type in ["survive", "kill", "explore"] and self.quest["current_value"] >= self.quest["target_value"]:
-            self.mission_completed = True
-        elif q_type == "boss" and self.quest["current_value"] >= 1:
-            self.mission_completed = True
+        if self.player.is_alive():
+            if q_type in ["survive", "kill", "explore"] and self.quest["current_value"] >= self.quest["target_value"]:
+                self.mission_completed = True
+            elif q_type == "boss" and self.quest["current_value"] >= 1:
+                self.mission_completed = True
 
     def view_inventory_ui(self):
         # We temporarily borrow the inventory logic from MainGodSpace.
@@ -449,6 +464,11 @@ class ProceduralWorld:
                 if 0 <= idx < len(self.player.inventory):
                     item = self.player.inventory[idx]
                     if item.get("type") == "consumable":
+                        # Legacy support for old hardcoded numbers
+                        if "heal" in item: self.player.heal(item.get("heal", 0))
+                        if "restore_mp" in item: self.player.restore_mp(item.get("restore_mp", 0))
+                        if "mp_restore" in item: self.player.restore_mp(item.get("mp_restore", 0))
+
                         effect = item.get("effect", "")
 
                         # Handle specific string effects based on the updated shop data

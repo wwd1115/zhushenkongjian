@@ -558,7 +558,11 @@ class MainGodSpace:
                 self.player.hp = self.player.max_hp
                 self.player.mp = self.player.max_mp
                 self.player.status_effects.clear()
-                print_success("高级恢复完毕，状态全满！")
+                self.player.status.clear()
+                for teammate in self.player.teammates:
+                    teammate.status.clear()
+                    teammate.hp = teammate.max_hp
+                print_success("高级恢复完毕，你和队友的状态全满，所有异常清除！")
             else:
                 print_error("积分不足！")
         time.sleep(1.5)
@@ -652,6 +656,11 @@ class MainGodSpace:
             if 0 <= idx < len(self.player.inventory):
                 item = self.player.inventory[idx]
                 if item.get("type", "") == "consumable":
+                    # Legacy support for old hardcoded numbers
+                    if "heal" in item: self.player.heal(item.get("heal", 0))
+                    if "restore_mp" in item: self.player.restore_mp(item.get("restore_mp", 0))
+                    if "mp_restore" in item: self.player.restore_mp(item.get("mp_restore", 0))
+
                     effect = item.get("effect", "")
 
                     # Handle specific string effects based on the updated shop data

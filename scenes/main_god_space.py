@@ -652,12 +652,26 @@ class MainGodSpace:
             if 0 <= idx < len(self.player.inventory):
                 item = self.player.inventory[idx]
                 if item.get("type", "") == "consumable":
-                    healed = item.get("heal", 0)
-                    restored = item.get("restore_mp", 0)
-                    if healed: self.player.heal(healed)
-                    if restored: self.player.restore_mp(restored)
+                    effect = item.get("effect", "")
+
+                    # Handle specific string effects based on the updated shop data
+                    if effect == "heal_15": self.player.heal(int(self.player.max_hp * 0.15))
+                    elif effect == "heal_35": self.player.heal(int(self.player.max_hp * 0.35))
+                    elif effect == "heal_80": self.player.heal(int(self.player.max_hp * 0.80))
+                    elif effect == "heal_100": self.player.hp = self.player.max_hp
+                    elif effect == "stats_up_1":
+                        self.player.str += 1; self.player.agi += 1; self.player.int += 1
+                        self.player.con += 1; self.player.per += 1; self.player.cha += 1
+                    elif effect == "stats_up_5":
+                        self.player.str += 5; self.player.agi += 5; self.player.int += 5
+                        self.player.con += 5; self.player.per += 5; self.player.cha += 5
+                    elif effect == "stats_up_30":
+                        self.player.str += 30; self.player.agi += 30; self.player.int += 30
+                        self.player.con += 30; self.player.per += 30; self.player.cha += 30
+
+                    self.player.update_stats()
                     self.player.inventory.remove(item)
-                    GUI_INSTANCE.gui_update_status(f"使用了: {item['name']} (恢复了生命 {healed}, 精神 {restored})")
+                    GUI_INSTANCE.gui_update_status(f"使用了: {item['name']}")
 
     def view_achievements(self):
         clear_screen()

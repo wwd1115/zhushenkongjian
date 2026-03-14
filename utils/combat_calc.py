@@ -76,8 +76,18 @@ class CombatSystem:
         print_warning(f"遇到了敌人: {enemy_names}!")
         time.sleep(0.5)
 
+        escaped_or_draw = False
+
         while self.player.is_alive() and any(e.is_alive() for e in self.enemies):
-            self.play_turn()
+            if self.turn > 100:
+                print_error("⚔️ 战斗已达回合上限 (100 回合)！系统强制终止战斗，双方撤退。")
+                escaped_or_draw = True
+                break
+
+            escaped_this_turn = self.play_turn()
+            if escaped_this_turn:
+                escaped_or_draw = True
+                break
 
         # Purge Dead Teammates First
         dead_teammates = [t for t in self.player.teammates if not t.is_alive()]
@@ -88,7 +98,9 @@ class CombatSystem:
             time.sleep(1)
 
         clear_screen()
-        if self.player.is_alive():
+        if escaped_or_draw:
+            print_warning("💨 你脱离了战场，什么也没有获得。")
+        elif self.player.is_alive():
             print_success("🔥 战斗胜利！🔥")
             
             # 基础收益
@@ -203,6 +215,11 @@ class CombatSystem:
                     print_warning(f"❄️ {actor.name} 被冰冻了，无法行动！")
 
             actor.process_status()
+
+            # Post-process to grant immunity if freeze just ended
+            was_frozen = skip_turn
+            if was_frozen and not any(st["name"] == "冰冻" for st in actor.status):
+                actor.add_status("冻结免疫", duration=1, power=0)
             time.sleep(0.2)
 
             # Check for Revive Logic if target dies from poison/burn
@@ -251,6 +268,7 @@ class CombatSystem:
                     self.enemy_attack(actor, target)
                     
         self.turn += 1
+        return escaped
 
     def handle_player_action(self, alive_enemies) -> bool:
         options = {
@@ -340,7 +358,6 @@ class CombatSystem:
                 escape_chance = min(0.8, self.player.agi * 0.05)
                 if random.random() < escape_chance:
                     print_success("逃跑成功！")
-                    for e in self.enemies: e.hp = 0 
                     escaped = True
                 else:
                     print_error("逃跑失败！")
@@ -501,8 +518,11 @@ class CombatSystem:
             print_warning(f"🔥 {target.name} 被技能点燃了！")
         elif skill["effect"] == "dmg_ice":
             if random.random() < 0.4:
-                target.add_status("冰冻", duration=1, power=0)
-                print_warning(f"❄️ {target.name} 被技能冻结了！")
+                if any(st["name"] == "冻结免疫" for st in target.status):
+                    print_warning(f"🛡️ {target.name} 抵抗了冰冻技能！")
+                else:
+                    target.add_status("冰冻", duration=1, power=0)
+                    print_warning(f"❄️ {target.name} 被技能冻结了！")
         elif skill["effect"] == "dmg_poison_dot":
             target.add_status("中毒", duration=4, power=int(self.player.total_int * 0.8))
             print_warning(f"🤢 {target.name} 被技能施加了剧毒！")
@@ -572,8 +592,11 @@ class CombatSystem:
             target.add_status("灼烧", duration=3, power=fire_dmg)
             print_warning(f"🔥 {target.name} 被点燃了！")
         if frost_dmg > 0 and random.random() < 0.2:
-            target.add_status("冰冻", duration=1, power=0)
-            print_warning(f"❄️ {target.name} 被冻结了！")
+            if any(st["name"] == "冻结免疫" for st in target.status):
+                print_warning(f"🛡️ {target.name} 抵抗了冰冻效果！")
+            else:
+                target.add_status("冰冻", duration=1, power=0)
+                print_warning(f"❄️ {target.name} 被冻结了！")
         if poison_power > 0 and random.random() < 0.5:
             target.add_status("中毒", duration=4, power=poison_power)
             print_warning(f"🤢 {target.name} 中毒了！")

@@ -288,6 +288,8 @@ class InventoryRenderer:
         color = self.colors.get(quality, self.colors["text"])
         
         name = selected_item.get("name", "Unknown")
+
+        # If it's forged, it might already have [+X] in its string, so we avoid duplicate parsing
         lvl = selected_item.get("level", 1)
         itype = selected_item.get("type", "unknown")
         req_lvl = selected_item.get("level_req", 1)
@@ -300,6 +302,12 @@ class InventoryRenderer:
         st = selected_item.get('stats', {})
         
         stat_items = []
+
+        # Include base flat properties if they exist outside 'stats' dict
+        for key in ["str", "agi", "int", "con", "per", "cha"]:
+            if selected_item.get(key, 0) > 0:
+                st[key] = st.get(key, 0) + selected_item[key]
+
         if selected_item.get("attack", 0) > 0: stat_items.append(f"攻击力: {selected_item['attack']}")
         if selected_item.get("defense", 0) > 0: stat_items.append(f"防御力: {selected_item['defense']}")
         if selected_item.get("heal", 0) > 0: stat_items.append(f"生命恢复: {selected_item['heal']}")
@@ -309,6 +317,17 @@ class InventoryRenderer:
             if v != 0:
                 name = stat_names.get(k, k.upper())
                 stat_items.append(f"{name}: +{v}")
+
+        # Add Gems
+        gems = selected_item.get("gems", [])
+        if gems:
+            for gem in gems:
+                g_stats = []
+                for k in ["attack", "defense", "str", "agi", "int", "con", "per", "cha"]:
+                    if gem.get(k, 0) > 0:
+                        nm = "攻" if k=="attack" else "防" if k=="defense" else stat_names.get(k, k.upper())
+                        g_stats.append(f"{nm}+{gem[k]}")
+                stat_items.append(f"💎 {gem['name']} ({','.join(g_stats)})")
                 
         # Draw stats in a 2-column grid
         sy = y + 55

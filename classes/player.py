@@ -118,19 +118,19 @@ class Player:
 
     @property
     def shop_discount(self):
-        """High morality gives shop discounts. Max 20% discount."""
-        if self.morality >= 100: return 0.8
-        elif self.morality >= 50: return 0.9
-        elif self.morality >= 20: return 0.95
-        return 1.0
+        """High morality gives shop discounts. Max 20% discount. Return float percentage representing discount amount."""
+        if self.morality >= 100: return 0.20
+        elif self.morality >= 50: return 0.10
+        elif self.morality >= 20: return 0.05
+        return 0.0
 
     @property
     def ruthless_bonus(self):
-        """Low morality gives final damage multiplier. Max 20% bonus."""
-        if self.morality <= -100: return 1.2
-        elif self.morality <= -50: return 1.1
-        elif self.morality <= -20: return 1.05
-        return 1.0
+        """Low morality gives final damage multiplier. Max 20% bonus. Return float percentage representing bonus amount."""
+        if self.morality <= -100: return 0.20
+        elif self.morality <= -50: return 0.10
+        elif self.morality <= -20: return 0.05
+        return 0.0
 
     def update_stats(self):
         """更新衍生属性"""

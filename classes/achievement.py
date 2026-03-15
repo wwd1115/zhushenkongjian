@@ -24,15 +24,18 @@ class AchievementSystem:
                 
             unlocked = False
             req = ach.get("req", {})
-            if "kills" in req and self.player.stats["kills"] >= req["kills"]:
+
+            # Use 'if-elif' structurally or check all conditions independently to avoid logical overwrites
+            # Actually, since these are discrete achievements, checking independent requirements per achievement is better.
+            if "kills" in req and self.player.stats.get("kills", 0) >= req["kills"]:
                 unlocked = True
-            if "deaths" in req and self.player.stats["deaths"] >= req["deaths"]:
+            elif "deaths" in req and self.player.stats.get("deaths", 0) >= req["deaths"]:
                 unlocked = True
-            if "points_spent" in req and self.player.stats["points_spent"] >= req["points_spent"]:
+            elif "points_spent" in req and self.player.stats.get("points_spent", 0) >= req["points_spent"]:
                 unlocked = True
-            if "morality_high" in req and self.player.morality >= req["morality_high"]:
+            elif "morality_high" in req and self.player.morality >= req["morality_high"]:
                 unlocked = True
-            if "morality_low" in req and self.player.morality <= req["morality_low"]:
+            elif "morality_low" in req and self.player.morality <= req["morality_low"]:
                 unlocked = True
 
             if unlocked:

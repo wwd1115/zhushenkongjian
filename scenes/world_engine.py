@@ -112,7 +112,12 @@ class ProceduralWorld:
             df = int(base_e.get("defense", 0) * mult)
             drop = int(base_e.get("drop_points", 50) * mult)
             
-            enemies.append(enemy_gen.Enemy(name, hp, atk, agi, defense=df, drop_points=drop))
+            new_enemy = enemy_gen.Enemy(name, hp, atk, agi, defense=df, drop_points=drop)
+            # Only apply elite modifiers to non-bosses
+            if not is_boss:
+                new_enemy = enemy_gen.make_elite(new_enemy)
+
+            enemies.append(new_enemy)
         return enemies
 
     def enter(self):
@@ -276,9 +281,56 @@ class ProceduralWorld:
                 
             elif room["type"] == "event":
                 GUI_INSTANCE.gui_update_status("触发未知奇遇事件！")
-                event_type = self.rng.choice(["shrine", "altar", "chest", "trap", "merchant", "nothing"])
+                event_type = self.rng.choice(["shrine", "altar", "chest", "trap", "merchant", "nothing", "spring", "scholar"])
                 
-                if event_type == "chest":
+                if event_type == "spring":
+                    GUI_INSTANCE.gui_print("💧 你发现了一口散发着浓郁生命力的神秘灵泉。", "cyan")
+                    res = GUI_INSTANCE.gui_get_input({"1": "饮用泉水 (恢复并获得Buff)", "2": "收集精华 (获取高额积分,污染灵泉)", "3": "离开"}, is_event=True)
+                    if res == "1":
+                        heal_amt = self.player.max_hp
+                        self.player.heal(heal_amt)
+                        self.player.restore_mp(self.player.max_mp)
+                        self.player.morality += 5
+                        GUI_INSTANCE.gui_print("💧 泉水甘甜，你的状态完全恢复了！(道德 +5)", "green")
+                    elif res == "2":
+                        self.player.morality -= 15
+                        pts = self.rng.randint(600, 1500)
+                        self.player.points += pts
+                        GUI_INSTANCE.gui_print(f"💀 你暴力提取了灵泉精华获得 {pts} 积分，泉水瞬间干涸污染。(道德 -15)", "yellow")
+                    else:
+                        GUI_INSTANCE.gui_print("你不为所动，离开了灵泉。", "white")
+                    room["cleared"] = True
+                    GUI_INSTANCE.gui_get_input({"0": "继续"}, is_event=True)
+
+                elif event_type == "scholar":
+                    GUI_INSTANCE.gui_print("📜 一位神秘学者拦住了你的去路，提出了一场知识的考验。", "magenta")
+                    # simple math puzzle
+                    a, b = self.rng.randint(10, 50), self.rng.randint(5, 20)
+                    op = self.rng.choice(["+", "*", "-"])
+                    ans_correct = str(eval(f"{a} {op} {b}"))
+                    ans_wrong1 = str(eval(f"{a} {op} {b}") + self.rng.randint(1, 10))
+                    ans_wrong2 = str(eval(f"{a} {op} {b}") - self.rng.randint(1, 10))
+
+                    opts = [ans_correct, ans_wrong1, ans_wrong2]
+                    self.rng.shuffle(opts)
+                    opts_dict = {str(i+1): v for i, v in enumerate(opts)}
+
+                    GUI_INSTANCE.gui_print(f"学者提问: {a} {op} {b} = ?", "cyan")
+                    res = GUI_INSTANCE.gui_get_input(opts_dict, is_event=True)
+
+                    if opts_dict[res] == ans_correct:
+                        pts = self.rng.randint(300, 800)
+                        self.player.points += pts
+                        GUI_INSTANCE.gui_print(f"🎉 回答正确！学者满意地点点头，赠予你 {pts} 积分。", "green")
+                    else:
+                        dmg = self.player.max_hp // 5
+                        self.player.take_damage(dmg)
+                        GUI_INSTANCE.gui_print(f"❌ 回答错误！学者勃然大怒，降下惩罚，你损失了 {dmg} HP！", "red")
+                    room["cleared"] = True
+                    if self.player.is_alive():
+                        GUI_INSTANCE.gui_get_input({"0": "继续"}, is_event=True)
+
+                elif event_type == "chest":
                     GUI_INSTANCE.gui_print("🎁 你发现了一个隐藏的奇遇宝箱！散发着诱人的光芒。", "cyan")
                     res = GUI_INSTANCE.gui_get_input({"1": "开启", "2": "无视并离开"}, is_event=True)
                     if res == "1":

@@ -78,16 +78,35 @@ class MainGodSpace:
         while True:
             clear_screen()
             print_header("🔥 装备锻造台 🔥")
-            print_info("花费积分，主神可以为你提炼装备中的杂质，提升其基础属性。")
+            print_info("在这里你可以提炼装备（提升基础属性）或进行宝石镶嵌（附加特殊属性）。")
             print_info(f"当前积分: {self.player.points}")
 
-            equippable = []
-            if self.player.equipment["weapon"]: equippable.append(("weapon", self.player.equipment["weapon"]))
-            if self.player.equipment["armor"]: equippable.append(("armor", self.player.equipment["armor"]))
-            if self.player.equipment["accessory"]: equippable.append(("accessory", self.player.equipment["accessory"]))
+            options = {
+                "1": "装备强化 (提升基础攻击/防御)",
+                "2": "宝石镶嵌 (附加力量/敏捷/体质等)",
+                "0": "离开锻造台"
+            }
+            choice = show_menu("选择锻造服务", options)
+
+            if choice == "0": break
+            elif choice == "1": self._forge_enhance()
+            elif choice == "2": self._forge_socketing()
+
+    def _get_equippable(self):
+        equippable = []
+        if self.player.equipment["weapon"]: equippable.append(("weapon", self.player.equipment["weapon"]))
+        if self.player.equipment["armor"]: equippable.append(("armor", self.player.equipment["armor"]))
+        if self.player.equipment["accessory"]: equippable.append(("accessory", self.player.equipment["accessory"]))
+        return equippable
+
+    def _forge_enhance(self):
+        while True:
+            clear_screen()
+            print_header("装备强化")
+            equippable = self._get_equippable()
 
             if not equippable:
-                print_error("你身上没有任何穿戴中的装备可以锻造！")
+                print_error("你身上没有任何穿戴中的装备可以强化！")
                 time.sleep(1.5)
                 break
 
@@ -97,8 +116,8 @@ class MainGodSpace:
                 cost = (lvl + 1) * 300 + item.get("level_req", 1) * 50
                 options[str(idx+1)] = f"[{slot.upper()}] {item['name']} (当前: +{lvl}) - 锻造费用: {cost} 积分"
 
-            options["0"] = "离开锻造台"
-            choice = show_menu("请选择要锻造的装备", options)
+            options["0"] = "返回"
+            choice = show_menu("请选择要强化的装备", options)
 
             if choice == "0": break
             try:
@@ -130,6 +149,64 @@ class MainGodSpace:
                     else:
                         print_error("积分不足以进行这次锻造！")
                     time.sleep(1.5)
+            except ValueError:
+                pass
+
+    def _forge_socketing(self):
+        while True:
+            clear_screen()
+            print_header("宝石镶嵌")
+            print_info("选择一件装备并镶嵌背包中的宝石。每件装备最多镶嵌3颗宝石。")
+            equippable = self._get_equippable()
+
+            if not equippable:
+                print_error("你身上没有任何穿戴中的装备！")
+                time.sleep(1.5)
+                break
+
+            options = {}
+            for idx, (slot, item) in enumerate(equippable):
+                gems = item.get("gems", [])
+                options[str(idx+1)] = f"[{slot.upper()}] {item['name']} (孔位: {len(gems)}/3)"
+            options["0"] = "返回"
+
+            choice = show_menu("请选择要镶嵌的装备", options)
+            if choice == "0": break
+
+            try:
+                choice_idx = int(choice) - 1
+                if 0 <= choice_idx < len(equippable):
+                    slot, item = equippable[choice_idx]
+                    if len(item.get("gems", [])) >= 3:
+                        print_error("该装备的孔位已满，无法再镶嵌宝石！")
+                        time.sleep(1.5)
+                        continue
+
+                    # Find gems in inventory
+                    gems_in_inv = [i for i in self.player.inventory if "宝石" in i.get("name", "")]
+                    if not gems_in_inv:
+                        print_error("你的背包里没有任何宝石！请先去兑换大厅购买。")
+                        time.sleep(1.5)
+                        continue
+
+                    gem_options = {}
+                    for g_idx, gem in enumerate(gems_in_inv):
+                        gem_options[str(g_idx+1)] = f"{gem['name']} - {gem.get('desc', '')}"
+                    gem_options["0"] = "取消"
+
+                    gem_choice = show_menu("选择要镶嵌的宝石", gem_options)
+                    if gem_choice == "0": continue
+
+                    gem_choice_idx = int(gem_choice) - 1
+                    if 0 <= gem_choice_idx < len(gems_in_inv):
+                        gem_to_socket = gems_in_inv[gem_choice_idx]
+                        self.player.inventory.remove(gem_to_socket)
+                        if "gems" not in item:
+                            item["gems"] = []
+                        item["gems"].append(gem_to_socket)
+                        print_success(f"成功将 {gem_to_socket['name']} 镶嵌到 {item['name']} 上！")
+                        self.player.update_stats()
+                        time.sleep(1.5)
             except ValueError:
                 pass
 
@@ -625,7 +702,7 @@ class MainGodSpace:
     def manage_pets(self):
         while True:
             clear_screen()
-            print_header("灵宠管理")
+            print_header("灵宠管理与升星")
             my_pets = getattr(self.player, 'pets', [])
             active = getattr(self.player, 'active_pet', None)
 

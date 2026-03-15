@@ -70,12 +70,16 @@ class Teammate:
 class PetActor:
     def __init__(self, pet_data, owner_level):
         self.name = pet_data["name"]
-        self.base_hp = pet_data["hp"]
-        self.max_hp = self.base_hp + (owner_level * 10)
+        stars = pet_data.get("stars", 1)
+        # Each star increases stats multiplier
+        star_mult = 1.0 + (stars - 1) * 0.3
+
+        self.base_hp = int(pet_data["hp"] * star_mult)
+        self.max_hp = int(self.base_hp + (owner_level * 10 * star_mult))
         self.hp = self.max_hp
-        self.attack = pet_data["attack"] + (owner_level * 5)
-        self.speed = pet_data["speed"] + owner_level
-        self.defense = pet_data["defense"] + (owner_level * 2)
+        self.attack = int((pet_data["attack"] + (owner_level * 5)) * star_mult)
+        self.speed = int((pet_data["speed"] + owner_level) * star_mult)
+        self.defense = int((pet_data["defense"] + (owner_level * 2)) * star_mult)
         self.skill = pet_data.get("skill", "attack")
         self.actor_id = "pet_0"
         self.is_defending = False

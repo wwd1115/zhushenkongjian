@@ -67,42 +67,54 @@ class Player:
     def total_str(self):
         val = self.str + self._get_base_bonus("str")
         for eq in self.equipment.values():
-            if eq and isinstance(eq, dict): val += int(eq.get("str") or 0)
+            if eq and isinstance(eq, dict):
+                val += int(eq.get("str") or 0)
+                for gem in eq.get("gems", []): val += int(gem.get("str") or 0)
         return val
 
     @property
     def total_agi(self):
         val = self.agi + self._get_base_bonus("agi")
         for eq in self.equipment.values():
-            if eq and isinstance(eq, dict): val += int(eq.get("agi") or 0)
+            if eq and isinstance(eq, dict):
+                val += int(eq.get("agi") or 0)
+                for gem in eq.get("gems", []): val += int(gem.get("agi") or 0)
         return val
 
     @property
     def total_int(self):
         val = self.int + self._get_base_bonus("int")
         for eq in self.equipment.values():
-            if eq and isinstance(eq, dict): val += int(eq.get("int") or 0)
+            if eq and isinstance(eq, dict):
+                val += int(eq.get("int") or 0)
+                for gem in eq.get("gems", []): val += int(gem.get("int") or 0)
         return val
 
     @property
     def total_con(self):
         val = self.con + self._get_base_bonus("con")
         for eq in self.equipment.values():
-            if eq and isinstance(eq, dict): val += int(eq.get("con") or 0)
+            if eq and isinstance(eq, dict):
+                val += int(eq.get("con") or 0)
+                for gem in eq.get("gems", []): val += int(gem.get("con") or 0)
         return val
 
     @property
     def total_per(self):
         val = self.per + self._get_base_bonus("per")
         for eq in self.equipment.values():
-            if eq and isinstance(eq, dict): val += int(eq.get("per") or 0)
+            if eq and isinstance(eq, dict):
+                val += int(eq.get("per") or 0)
+                for gem in eq.get("gems", []): val += int(gem.get("per") or 0)
         return val
 
     @property
     def total_cha(self):
         val = self.cha + self._get_base_bonus("cha")
         for eq in self.equipment.values():
-            if eq and isinstance(eq, dict): val += int(eq.get("cha") or 0)
+            if eq and isinstance(eq, dict):
+                val += int(eq.get("cha") or 0)
+                for gem in eq.get("gems", []): val += int(gem.get("cha") or 0)
         return val
 
     @property
@@ -194,18 +206,26 @@ class Player:
         
     @property
     def defense(self):
-        # 防御力 = 体质×2 + 装备加成
+        # 防御力 = 体质×2 + 装备加成 + 宝石加成
         equip_def = 0
-        if self.equipment["armor"]:
-            equip_def = self.equipment["armor"].get("defense", 0)
+        for eq in self.equipment.values():
+            if eq and isinstance(eq, dict):
+                if eq == self.equipment.get("armor"):
+                    equip_def += eq.get("defense", 0)
+                for gem in eq.get("gems", []):
+                    equip_def += gem.get("defense", 0)
         return self.total_con * 2 + equip_def
 
     @property
     def attack(self):
-        # 攻击力跟力量相关，加上武器
+        # 攻击力跟力量相关，加上武器 + 宝石加成
         equip_atk = 0
-        if self.equipment["weapon"]:
-            equip_atk = self.equipment["weapon"].get("attack", 0)
+        for eq in self.equipment.values():
+            if eq and isinstance(eq, dict):
+                if eq == self.equipment.get("weapon"):
+                    equip_atk += eq.get("attack", 0)
+                for gem in eq.get("gems", []):
+                    equip_atk += gem.get("attack", 0)
         return self.total_str * 2 + equip_atk
 
     def take_damage(self, amount):

@@ -39,6 +39,30 @@ class Enemy:
     def is_alive(self):
         return self.hp > 0
 
+def make_elite(enemy):
+    if not isinstance(enemy, Enemy) or random.random() > 0.15:
+        return enemy
+
+    elite_types = [
+        {"name": "吸血", "hp_mult": 1.2, "atk_mult": 1.1, "special": "lifesteal"},
+        {"name": "坚韧", "hp_mult": 1.5, "atk_mult": 0.9, "def_bonus": 20, "special": "armored"},
+        {"name": "迅捷", "hp_mult": 0.8, "atk_mult": 1.2, "speed_bonus": 30, "special": "swift"},
+        {"name": "反伤", "hp_mult": 1.3, "atk_mult": 1.0, "special": "reflective"}
+    ]
+    elite = random.choice(elite_types)
+
+    enemy.name = f"[{elite['name']}] {enemy.name}"
+    enemy.max_hp = int(enemy.max_hp * elite["hp_mult"])
+    enemy.hp = enemy.max_hp
+    enemy.attack = int(enemy.attack * elite["atk_mult"])
+    enemy.defense = int((enemy.defense + elite.get("def_bonus", 0)) * 1.5)
+    enemy.speed += elite.get("speed_bonus", 0)
+    enemy.special_ability = elite["special"]
+    enemy.drop_exp = int(enemy.drop_exp * 1.5)
+    enemy.drop_points = int(enemy.drop_points * 2.0)
+
+    return enemy
+
 # 预设敌人工厂
 def create_zombie(enemy_type="normal"):
     if enemy_type == "normal":

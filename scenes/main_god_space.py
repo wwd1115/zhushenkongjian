@@ -636,6 +636,7 @@ class MainGodSpace:
                 "3": "道具与消耗品",
                 "4": "召唤兽与灵宠",
                 "5": "🎲 随机装备盲盒 (抽取极品词条!)",
+                "6": "💎 宝石材料库 (锻造台镶嵌使用)",
                 "0": "返回"
             }
             choice = show_menu("商品分类", options)
@@ -646,6 +647,7 @@ class MainGodSpace:
             elif choice == "3": self.buy_items("consumables")
             elif choice == "4": self.buy_pets()
             elif choice == "5": self.buy_gacha()
+            elif choice == "6": self.buy_items("gems")
 
     def buy_pets(self):
         while True:
@@ -785,7 +787,7 @@ class MainGodSpace:
         while True:
             clear_screen()
             items = self.shop_data.get(category, [])
-            cat_cn = {"weapons": "武器", "armors": "防具", "consumables": "道具/消耗品"}.get(category, category)
+            cat_cn = {"weapons": "武器", "armors": "防具", "consumables": "道具/消耗品", "gems": "镶嵌宝石"}.get(category, category)
             print_header(f"购买 - {cat_cn}")
             print_info(f"当前积分: {self.player.points}")
             

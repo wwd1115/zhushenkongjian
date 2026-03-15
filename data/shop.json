@@ -159,5 +159,14 @@
         {"id": "p_2", "name": "机械浮游炮", "type": "pet", "cost": 8000, "desc": "自动追踪敌人的火力支援装置。", "hp": 150, "attack": 60, "speed": 20, "defense": 20, "skill": "laser"},
         {"id": "p_3", "name": "虚空史莱姆", "type": "pet", "cost": 15000, "desc": "能吸收伤害并在攻击时附带剧毒。", "hp": 400, "attack": 30, "speed": 8, "defense": 30, "skill": "poison"},
         {"id": "p_4", "name": "神圣独角兽", "type": "pet", "cost": 50000, "desc": "能治疗主人的传说生物。", "hp": 800, "attack": 80, "speed": 25, "defense": 50, "skill": "heal"}
+    ],
+    "gems": [
+        {"id": "g_1", "name": "力量红宝石", "type": "gem", "cost": 1000, "desc": "镶嵌部位任意。力量 +10", "str": 10},
+        {"id": "g_2", "name": "敏捷绿宝石", "type": "gem", "cost": 1000, "desc": "镶嵌部位任意。敏捷 +10", "agi": 10},
+        {"id": "g_3", "name": "智慧蓝宝石", "type": "gem", "cost": 1000, "desc": "镶嵌部位任意。智力 +10", "int": 10},
+        {"id": "g_4", "name": "体质黄宝石", "type": "gem", "cost": 1000, "desc": "镶嵌部位任意。体质 +10", "con": 10},
+        {"id": "g_5", "name": "锋锐黑耀石", "type": "gem", "cost": 3000, "desc": "镶嵌部位任意。攻击 +50", "attack": 50},
+        {"id": "g_6", "name": "坚固钻石", "type": "gem", "cost": 3000, "desc": "镶嵌部位任意。防御 +50", "defense": 50},
+        {"id": "g_7", "name": "完美混沌石", "type": "gem", "cost": 15000, "desc": "镶嵌部位任意。全属性 +20, 攻击/防御 +100", "str": 20, "agi": 20, "int": 20, "con": 20, "per": 20, "cha": 20, "attack": 100, "defense": 100}
     ]
 }

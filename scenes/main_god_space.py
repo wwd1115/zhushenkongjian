@@ -140,13 +140,8 @@ class MainGodSpace:
         while True:
             clear_screen()
             print_header("🍻 轮回小队酒馆 🍻")
-            print_info("这里聚集着来自不同位面的轮回者。你可以花费积分招募他们作为队友（最多4名）。")
+            print_info("这里聚集着来自不同位面的轮回者。你可以花费积分招募他们作为队友，或管理现有小队。")
             print_info(f"当前积分: {self.player.points} | 当前队伍规模: {len(self.player.teammates)}/4")
-
-            if len(self.player.teammates) >= 4:
-                print_warning("你的队伍已满，无法招募更多队友！")
-                time.sleep(2)
-                break
 
             # Generate 3 random mercenaries
             mercs = []
@@ -173,13 +168,23 @@ class MainGodSpace:
                 desc = f"HP:{m['hp']} ATK:{m['attack']} DEF:{m['defense']} AGI:{m['agi']}"
                 options[str(idx+1)] = f"招募【{m['name']}】 ({desc}) - 签约费: {m['cost']} 积分"
 
+            options["M"] = "管理当前小队 (特训 / 解雇)"
             options["0"] = "离开酒馆"
             choice = show_menu("今日可招募佣兵", options)
 
             if choice == "0": break
+            elif choice.upper() == "M":
+                self.manage_teammates()
+                continue
+
             try:
                 choice_idx = int(choice) - 1
                 if 0 <= choice_idx < len(mercs):
+                    if len(self.player.teammates) >= 4:
+                        print_error("你的队伍已满(最多4人)，无法招募更多队友！请先解雇现有队友。")
+                        time.sleep(2)
+                        continue
+
                     m = mercs[choice_idx]
                     if self.player.points >= m["cost"]:
                         self.player.points -= m["cost"]
@@ -192,6 +197,77 @@ class MainGodSpace:
                     else:
                         print_error("积分不足以支付签约费！")
                     time.sleep(1.5)
+            except ValueError:
+                pass
+
+    def manage_teammates(self):
+        while True:
+            clear_screen()
+            print_header("🛡️ 队伍管理与特训中心 🛡️")
+            print_info(f"当前积分: {self.player.points}")
+            if not self.player.teammates:
+                print_error("你目前没有招募任何队友。")
+                time.sleep(1.5)
+                break
+
+            options = {}
+            for idx, tm in enumerate(self.player.teammates):
+                cost = tm.max_hp + tm.attack * 5 + tm.defense * 10
+                desc = f"HP:{tm.hp}/{tm.max_hp} ATK:{tm.attack} DEF:{tm.defense} AGI:{tm.agi}"
+                options[str(idx+1)] = f"特训【{tm.name}】(+15%属性) - 消耗: {cost}积分\n      {desc}"
+
+            options["D"] = "解雇队友 (腾出空位)"
+            options["0"] = "返回上一页"
+
+            choice = show_menu("请选择你要操作的队员", options)
+            if choice == "0": break
+            elif choice.upper() == "D":
+                self.dismiss_teammate()
+                continue
+
+            try:
+                choice_idx = int(choice) - 1
+                if 0 <= choice_idx < len(self.player.teammates):
+                    tm = self.player.teammates[choice_idx]
+                    cost = tm.max_hp + tm.attack * 5 + tm.defense * 10
+                    if self.player.points >= cost:
+                        self.player.points -= cost
+                        self.player.stats["points_spent"] += cost
+
+                        tm.max_hp = int(tm.max_hp * 1.15)
+                        tm.hp = tm.max_hp
+                        tm.attack = int(tm.attack * 1.15) + 1
+                        tm.defense = int(tm.defense * 1.15) + 1
+                        tm.agi = int(tm.agi * 1.15) + 1
+
+                        print_success(f"💪 特训完成！{tm.name} 的属性得到了全面提升！")
+                    else:
+                        print_error("积分不足以进行这次特训！")
+                    time.sleep(1.5)
+            except ValueError:
+                pass
+
+    def dismiss_teammate(self):
+        while True:
+            clear_screen()
+            print_header("👋 解雇队友")
+            options = {}
+            for idx, tm in enumerate(self.player.teammates):
+                options[str(idx+1)] = f"解雇【{tm.name}】"
+            options["0"] = "取消"
+
+            choice = show_menu("请选择要遣散的队友 (此操作不可逆)", options)
+            if choice == "0": break
+            try:
+                choice_idx = int(choice) - 1
+                if 0 <= choice_idx < len(self.player.teammates):
+                    tm = self.player.teammates[choice_idx]
+                    confirm = get_input(f"确定要解雇 {tm.name} 吗？(y/N): ")
+                    if confirm.lower() == 'y':
+                        self.player.teammates.pop(choice_idx)
+                        print_warning(f"{tm.name} 离开了队伍。")
+                        time.sleep(1.5)
+                        break
             except ValueError:
                 pass
 

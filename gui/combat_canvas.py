@@ -357,18 +357,25 @@ class CombatRenderer:
         
         cy_base = height * 0.75 - 40
         
-        # Player formation (left side)
+        # Player formation (left side) - Multi-row wrap if too many
         for i, pd in enumerate(player_data_list):
-            cx = width * 0.4 - (i * 70) # cascade backwards
+            # Zig-zag or wrap logic to prevent off-screen coordinates
+            row = i % 2
+            col = i // 2
+
+            # Calculate dynamic offsets
+            # If front row (row 0), they stand closer to center. If back row, they are behind.
+            cx = width * 0.4 - (col * 80) - (row * 40)
+
             color = "#00BFFF"
             scale = 2.0
-            y_offset = 0
+            y_offset = - (row * 30) # Stagger Y position for backline
 
             # Make pet smaller and float slightly
             if pd.get("id") == "pet_0":
                 color = "#FFD700"
                 scale = 1.0
-                y_offset = -40
+                y_offset -= 40
 
             s = Stickman(self.canvas, cx, cy_base + y_offset, color=color, direction=1)
             s.scale = scale
@@ -377,10 +384,14 @@ class CombatRenderer:
             s.update_hp(pd.get("hp", 100), pd.get("max_hp", 100))
             self.player_team.append(s)
             
-        # Enemy formation (right side)
+        # Enemy formation (right side) - Multi-row wrap if too many
         for i, ed in enumerate(enemy_data_list):
-            cx = width * 0.6 + (i * 70)
-            s = Stickman(self.canvas, cx, cy_base, color="#FF6347", direction=-1)
+            row = i % 2
+            col = i // 2
+            cx = width * 0.6 + (col * 80) + (row * 40)
+            y_offset = - (row * 30)
+
+            s = Stickman(self.canvas, cx, cy_base + y_offset, color="#FF6347", direction=-1)
             s.name = ed.get("name", "Enemy")
             s.actor_id = ed.get("id", s.name)
             s.update_hp(ed.get("hp", 100), ed.get("max_hp", 100))

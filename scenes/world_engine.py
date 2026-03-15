@@ -303,15 +303,17 @@ class ProceduralWorld:
                     if res == "1":
                         heal = self.player.max_hp // 2
                         self.player.heal(heal)
-                        GUI_INSTANCE.gui_print(f"🕊️ 圣光拂过，你的伤势恢复了，生命 +{heal}！", "green")
+                        self.player.morality += 5
+                        GUI_INSTANCE.gui_print(f"🕊️ 圣光拂过，你的伤势恢复了，生命 +{heal}！ (道德 +5)", "green")
                     elif res == "2":
+                        self.player.morality -= 10
                         if self.rng.random() < 0.5:
                             pts = self.rng.randint(300, 800)
-                            GUI_INSTANCE.gui_print(f"😈 神龛中涌出狂暴的能量，你吸收了它！积分+{pts}", "yellow")
+                            GUI_INSTANCE.gui_print(f"😈 破坏神像！神龛中涌出狂暴的能量，你吸收了它！积分+{pts} (道德 -10)", "yellow")
                             self.player.points += pts
                         else:
                             dmg = self.player.max_hp // 3
-                            GUI_INSTANCE.gui_print(f"💀 神明震怒！雷罚降临，你损失了 {dmg} 点生命值！", "red")
+                            GUI_INSTANCE.gui_print(f"💀 亵渎神明！雷罚降临，你损失了 {dmg} 点生命值！ (道德 -10)", "red")
                             self.player.take_damage(dmg)
                     else:
                         GUI_INSTANCE.gui_print("你默默走开了。", "white")
@@ -321,31 +323,60 @@ class ProceduralWorld:
                 elif event_type == "altar":
                     dmg = self.player.max_hp // 5
                     GUI_INSTANCE.gui_print(f"🩸 眼前是一个鲜血祭坛，祭祀需要大量生命力。", "magenta")
-                    res = GUI_INSTANCE.gui_get_input({"1": f"割腕献祭 (扣除{dmg}HP换取积分)", "2": "拒绝邪恶, 直接离开"}, is_event=True)
+                    res = GUI_INSTANCE.gui_get_input({"1": f"割腕献祭 (扣除{dmg}HP换取积分)", "2": "拒绝邪恶, 摧毁祭坛"}, is_event=True)
                     if res == "1":
                         self.player.take_damage(dmg)
+                        self.player.morality -= 15
                         if self.player.is_alive():
                             pts = self.rng.randint(200, 500)
                             self.player.points += pts
-                            GUI_INSTANCE.gui_print(f"🩸 献祭成功！你的血液化为 {pts} 积分！", "yellow")
+                            GUI_INSTANCE.gui_print(f"🩸 献祭成功！你的血液化为 {pts} 积分！ (道德 -15)", "yellow")
                         else:
-                            GUI_INSTANCE.gui_print("🩸 你的生命力不足以支撑献祭，你死在了祭坛上！", "red")
+                            GUI_INSTANCE.gui_print("🩸 你的生命力不足以支撑献祭，你死在了祭坛上！ (道德 -15)", "red")
                     else:
-                        GUI_INSTANCE.gui_print("你厌恶地离开了祭坛。", "white")
+                        self.player.morality += 10
+                        GUI_INSTANCE.gui_print("⚔️ 你厌恶地摧毁了邪恶的祭坛，感受到了一丝正气的回响。(道德 +10)", "white")
                     room["cleared"] = True
                     if self.player.is_alive():
                         GUI_INSTANCE.gui_get_input({"0": "继续"}, is_event=True)
                 elif event_type == "trap":
-                    dmg = self.player.max_hp // 8
-                    self.player.take_damage(dmg)
-                    GUI_INSTANCE.gui_print(f"⚠️ 糟糕，你误入了古代陷阱！受到了 {dmg} 点真实穿透伤害！", "red")
+                    GUI_INSTANCE.gui_print("⚠️ 你发现前方似乎有异样，可能是一个古代陷阱。", "yellow")
+                    res = GUI_INSTANCE.gui_get_input({"1": "小心绕行 (耗时安全)", "2": "强行拆除以获取零件", "3": "诱导后面的怪物踩踏"}, is_event=True)
+                    if res == "1":
+                        GUI_INSTANCE.gui_print("🚶 你小心翼翼地绕过了陷阱，安然无恙。", "green")
+                    elif res == "2":
+                        if self.rng.random() < 0.6:
+                            pts = self.rng.randint(50, 150)
+                            self.player.points += pts
+                            GUI_INSTANCE.gui_print(f"🔧 拆除成功！你获得了 {pts} 积分的零件！", "green")
+                        else:
+                            dmg = self.player.max_hp // 6
+                            self.player.take_damage(dmg)
+                            GUI_INSTANCE.gui_print(f"💥 陷阱爆炸！受到了 {dmg} 点伤害！", "red")
+                    elif res == "3":
+                        self.player.morality -= 5
+                        pts = self.rng.randint(100, 200)
+                        self.player.points += pts
+                        GUI_INSTANCE.gui_print(f"😈 你布置了诱导标记，后面的怪物死在了陷阱中。你搜刮了它们，获得 {pts} 积分！(道德 -5)", "yellow")
+
                     room["cleared"] = True
                     if self.player.is_alive():
                         GUI_INSTANCE.gui_get_input({"0": "继续"}, is_event=True)
                 elif event_type == "merchant":
-                    pts = self.rng.randint(100, 300)
-                    GUI_INSTANCE.gui_print(f"🎒 你遇到了一个身穿黑袍的流浪商人。他递给你一个沉甸甸的钱袋（包含 {pts} 积分）后匆匆离去。", "yellow")
-                    self.player.points += pts
+                    GUI_INSTANCE.gui_print(f"🎒 你遇到了一个身穿黑袍的流浪商人。", "yellow")
+                    res = GUI_INSTANCE.gui_get_input({"1": "友好交易 (获得少量补给)", "2": "打劫他！", "3": "无视"}, is_event=True)
+                    if res == "1":
+                        pts = self.rng.randint(100, 300)
+                        self.player.points += pts
+                        self.player.morality += 2
+                        GUI_INSTANCE.gui_print(f"🎒 商人很感激你的友善，赠送了你一些物资（包含 {pts} 积分）。(道德 +2)", "green")
+                    elif res == "2":
+                        pts = self.rng.randint(500, 1000)
+                        self.player.points += pts
+                        self.player.morality -= 20
+                        GUI_INSTANCE.gui_print(f"🗡️ 你残忍地杀害了商人，掠夺了他的全部财物！（获得 {pts} 积分）(道德 -20)", "red")
+                    else:
+                        GUI_INSTANCE.gui_print("你走开了。", "white")
                     GUI_INSTANCE.gui_get_input({"0": "继续"}, is_event=True)
                 else:
                     GUI_INSTANCE.gui_print("💨 这是一片空地，什么也没有发生，只有风吹过的声音。", "white")

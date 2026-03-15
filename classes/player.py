@@ -105,6 +105,33 @@ class Player:
             if eq and isinstance(eq, dict): val += int(eq.get("cha") or 0)
         return val
 
+    @property
+    def alignment_title(self):
+        m = self.morality
+        if m >= 100: return "至善圣者"
+        elif m >= 50: return "光辉骑士"
+        elif m >= 20: return "守序者"
+        elif m > -20: return "中立流浪者"
+        elif m > -50: return "暗影暴徒"
+        elif m > -100: return "深渊恶棍"
+        else: return "灭世魔王"
+
+    @property
+    def shop_discount(self):
+        """High morality gives shop discounts. Max 20% discount."""
+        if self.morality >= 100: return 0.8
+        elif self.morality >= 50: return 0.9
+        elif self.morality >= 20: return 0.95
+        return 1.0
+
+    @property
+    def ruthless_bonus(self):
+        """Low morality gives final damage multiplier. Max 20% bonus."""
+        if self.morality <= -100: return 1.2
+        elif self.morality <= -50: return 1.1
+        elif self.morality <= -20: return 1.05
+        return 1.0
+
     def update_stats(self):
         """更新衍生属性"""
         # 防止超高等级引发整数溢出或负数防御
@@ -241,7 +268,7 @@ class Player:
         pet_name = self.active_pet["name"] if getattr(self, 'active_pet', None) else "无"
         
         status_lines = [
-            f"--- 轮回者: {self.name} | Lv.{self.level} | 积分: {self.points} | 道德: {self.morality} ---",
+            f"--- 轮回者: {self.name} | Lv.{self.level} | 积分: {self.points} | 道德: {self.morality} ({self.alignment_title}) ---",
             f"[血统体系]: {bl_name}   |   [修真功法]: {cu_name}   |   [出战宠物]: {pet_name}",
             f"生命值: {hp_bar}  精神力: {mp_bar}",
             f"力量(STR): {self.str}(+{self.total_str-self.str})  敏捷(AGI): {self.agi}(+{self.total_agi-self.agi})  智力(INT): {self.int}(+{self.total_int-self.int})",

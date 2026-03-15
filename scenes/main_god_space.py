@@ -595,7 +595,9 @@ class MainGodSpace:
                 choice_idx = int(choice) - 1
                 if 0 <= choice_idx < len(pets):
                     pet_data = pets[choice_idx].copy()
-                    price = pet_data.get('cost', 999999)
+                    base_price = pet_data.get('cost', 999999)
+                    discount = getattr(self.player, 'shop_discount', 0)
+                    price = int(base_price * (1 - discount))
 
                     if any(p.get("id") == pet_data.get("id") for p in getattr(self.player, 'pets', [])):
                         print_error("你已经拥有该灵宠了！")
@@ -657,8 +659,10 @@ class MainGodSpace:
             print_info("花费积分，主神将为你随机抽取当前等级的装备（包含上万种词条组合）！")
             print_info(f"当前积分: {self.player.points}")
             
-            cost_normal = 400 + self.player.level * 80  # Increased for balance
-            cost_premium = 1200 + self.player.level * 150 # Increased for balance
+            discount = getattr(self.player, 'shop_discount', 0)
+
+            cost_normal = int((400 + self.player.level * 80) * (1 - discount))
+            cost_premium = int((1200 + self.player.level * 150) * (1 - discount))
             
             options = {
                 "1": f"普通盲盒 (保底精良，小概率稀有或史诗) - {cost_normal}积分",
@@ -720,23 +724,26 @@ class MainGodSpace:
                 choice_idx = int(choice) - 1
                 if 0 <= choice_idx < len(items):
                     item = items[choice_idx].copy()
-                    price = item.get('cost', 999999)
+                    base_price = item.get('cost', 999999)
+                    discount = getattr(self.player, 'shop_discount', 0)
+                    price = int(base_price * (1 - discount))
+
                     if self.player.points >= price:
                         self.player.points -= price
                         self.player.stats["points_spent"] += price
                         if category == "weapons":
                             self.player.equipment["weapon"] = item
-                            print_success(f"购买并装备了 {item['name']}!")
+                            print_success(f"花费 {price} 积分购买并装备了 {item['name']}!")
                         elif category == "armors":
                             self.player.equipment["armor"] = item
-                            print_success(f"购买并装备了 {item['name']}!")
+                            print_success(f"花费 {price} 积分购买并装备了 {item['name']}!")
                         else:
                             self.player.inventory.append(item)
-                            print_success(f"购买了 {item['name']} 并放入背包。")
+                            print_success(f"花费 {price} 积分购买了 {item['name']} 并放入背包。")
                         self.player.update_stats()
                         self.player.check_achievements()
                     else:
-                        print_error("积分不足！")
+                        print_error(f"积分不足！(折后需要 {price} 积分)")
                     time.sleep(1.5)
             except ValueError:
                 pass

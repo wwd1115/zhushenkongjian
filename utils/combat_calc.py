@@ -560,6 +560,11 @@ class CombatSystem:
             return
 
         base_dmg = float(self.player.attack) * float(multiplier)
+
+        ruthless_bonus = getattr(self.player, 'ruthless_bonus', 0)
+        if ruthless_bonus > 0:
+            base_dmg *= (1.0 + ruthless_bonus)
+
         is_crit = random.random() < float(self.player.crit_rate)
 
         # Calculate crit damage multiplier from effects

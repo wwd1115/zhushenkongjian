@@ -168,7 +168,10 @@ class CombatSystem:
         
         alive_enemies = [e for e in self.enemies if e.is_alive()]
         for idx, e in enumerate(alive_enemies):
-            print_warning(f"[{idx+1}] {e.name}  生命: {e.hp}/{e.max_hp}")
+            extra_info = ""
+            if getattr(e, 'special_ability', None) == "armored": extra_info = " (护甲强化)"
+            elif getattr(e, 'special_ability', None) == "swift": extra_info = " (行动如风)"
+            print_warning(f"[{idx+1}] {e.name}{extra_info}  生命: {e.hp}/{e.max_hp}")
         
         print("-" * 30)
         
@@ -418,6 +421,17 @@ class CombatSystem:
             
         print_success(f"{teammate.name} 对 {target.name} 造成了 {dmg_dealt} 点伤害！")
 
+        # Elite Reflective check for teammates
+        if getattr(target, 'special_ability', None) == "reflective" and dmg_dealt > 0:
+            refl_dmg = max(1, int(dmg_dealt * 0.3))
+            teammate.take_damage(refl_dmg)
+            print_warning(f"🛡️ {target.name} 的反伤护甲弹回了 {refl_dmg} 点伤害！")
+            if GUI_INSTANCE:
+                GUI_INSTANCE.gui_combat_event({
+                    "type": "hit", "target": teammate.actor_id, "damage": refl_dmg,
+                    "hp": teammate.hp, "crit": False, "color": "purple"
+                })
+
         # Boss Phase 2 Check
         if hasattr(target, 'max_hp') and target.max_hp >= 1000 and "首领" in getattr(target, 'name', '') and target.hp > 0 and target.hp <= target.max_hp * 0.5 and not getattr(target, 'phase2_triggered', False):
             target.phase2_triggered = True
@@ -481,6 +495,17 @@ class CombatSystem:
             })
 
         print_success(f"🐾 {pet.name} 攻击了 {target.name}，造成了 {dmg_dealt} 点伤害！")
+
+        # Elite Reflective check for pets
+        if getattr(target, 'special_ability', None) == "reflective" and dmg_dealt > 0:
+            refl_dmg = max(1, int(dmg_dealt * 0.3))
+            pet.take_damage(refl_dmg)
+            print_warning(f"🛡️ {target.name} 的反伤护甲弹回了 {refl_dmg} 点伤害！")
+            if GUI_INSTANCE:
+                GUI_INSTANCE.gui_combat_event({
+                    "type": "hit", "target": pet.actor_id, "damage": refl_dmg,
+                    "hp": pet.hp, "crit": False, "color": "purple"
+                })
 
         # Boss Phase 2 Check
         if hasattr(target, 'max_hp') and target.max_hp >= 1000 and "首领" in getattr(target, 'name', '') and target.hp > 0 and target.hp <= target.max_hp * 0.5 and not getattr(target, 'phase2_triggered', False):
@@ -631,6 +656,17 @@ class CombatSystem:
         if true_dmg > 0: msg += f" (⚔️真实+{true_dmg})"
         print_success(msg)
 
+        # Elite Reflective check
+        if getattr(target, 'special_ability', None) == "reflective" and dmg_dealt > 0:
+            refl_dmg = max(1, int(dmg_dealt * 0.3))
+            self.player.take_damage(refl_dmg)
+            print_warning(f"🛡️ {target.name} 的反伤护甲弹回了 {refl_dmg} 点伤害！")
+            if GUI_INSTANCE:
+                GUI_INSTANCE.gui_combat_event({
+                    "type": "hit", "target": self.player.actor_id, "damage": refl_dmg,
+                    "hp": self.player.hp, "crit": False, "color": "purple"
+                })
+
         # Boss Phase 2 Check
         if hasattr(target, 'max_hp') and target.max_hp >= 1000 and "首领" in getattr(target, 'name', '') and target.hp > 0 and target.hp <= target.max_hp * 0.5 and not getattr(target, 'phase2_triggered', False):
             target.phase2_triggered = True
@@ -640,7 +676,7 @@ class CombatSystem:
             if GUI_INSTANCE:
                 GUI_INSTANCE.gui_combat_event({"type": "text", "target": target.actor_id, "text": "狂暴!", "color": "magenta"})
             print_error(f"⚠️ 警告：{target.name} 进入二阶段【狂暴】状态！解除了所有异常，攻击力和速度大幅提升！⚠️")
-        
+
         if leech_pct > 0:
             heal_amt = max(1, int(dmg_dealt * (leech_pct / 100.0)))
             self.player.heal(heal_amt)
@@ -691,6 +727,17 @@ class CombatSystem:
             })
             
         print_error(f"{enemy.name} 攻击了 {target.name}，造成了 {dmg_dealt} 点伤害！")
+
+        if getattr(enemy, 'special_ability', None) == "lifesteal" and dmg_dealt > 0:
+            heal_amt = max(1, int(dmg_dealt * 0.3))
+            enemy.hp = min(enemy.max_hp, enemy.hp + heal_amt)
+            print_warning(f"🧛 {enemy.name} 触发了吸血，恢复了 {heal_amt} 点生命值！")
+            if GUI_INSTANCE:
+                GUI_INSTANCE.gui_combat_event({
+                    "type": "heal", "target": enemy.actor_id, "amount": heal_amt,
+                    "hp": enemy.hp, "color": "green"
+                })
+            time.sleep(0.3)
 
         if thorns_dmg > 0:
             enemy.take_damage(thorns_dmg)

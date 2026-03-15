@@ -39,11 +39,13 @@ class MainGodSpace:
                 "1": "进入任务大厅",
                 "2": "强化大厅 (属性与血统图谱)",
                 "3": "进入兑换商城 (装备道具)",
-                "4": "进入休息区",
-                "5": "查看属性与背包",
-                "6": "查看个人成就",
-                "7": "查看排行榜",
-                "8": "保存游戏",
+                "4": "装备锻造与附魔台",
+                "5": "轮回小队酒馆 (招募队友)",
+                "6": "进入休息区",
+                "7": "查看属性与背包",
+                "8": "查看个人成就",
+                "9": "查看排行榜",
+                "S": "保存游戏",
                 "0": "返回主菜单(退出当前角色)"
             }
             choice = show_menu("主神空间", options)
@@ -55,18 +57,143 @@ class MainGodSpace:
             elif choice == "3":
                 self.shop()
             elif choice == "4":
-                self.rest_area()
+                self.forge_hall()
             elif choice == "5":
-                self.view_inventory_ui()
+                self.tavern()
             elif choice == "6":
-                self.view_achievements()
+                self.rest_area()
             elif choice == "7":
-                self.view_leaderboard()
+                self.view_inventory_ui()
             elif choice == "8":
+                self.view_achievements()
+            elif choice == "9":
+                self.view_leaderboard()
+            elif choice == "S" or choice == "s":
                 self.game.save_game()
             elif choice == "0":
                 self.game.player = None
                 break
+
+    def forge_hall(self):
+        while True:
+            clear_screen()
+            print_header("🔥 装备锻造台 🔥")
+            print_info("花费积分，主神可以为你提炼装备中的杂质，提升其基础属性。")
+            print_info(f"当前积分: {self.player.points}")
+
+            equippable = []
+            if self.player.equipment["weapon"]: equippable.append(("weapon", self.player.equipment["weapon"]))
+            if self.player.equipment["armor"]: equippable.append(("armor", self.player.equipment["armor"]))
+            if self.player.equipment["accessory"]: equippable.append(("accessory", self.player.equipment["accessory"]))
+
+            if not equippable:
+                print_error("你身上没有任何穿戴中的装备可以锻造！")
+                time.sleep(1.5)
+                break
+
+            options = {}
+            for idx, (slot, item) in enumerate(equippable):
+                lvl = item.get("enhance_level", 0)
+                cost = (lvl + 1) * 300 + item.get("level_req", 1) * 50
+                options[str(idx+1)] = f"[{slot.upper()}] {item['name']} (当前: +{lvl}) - 锻造费用: {cost} 积分"
+
+            options["0"] = "离开锻造台"
+            choice = show_menu("请选择要锻造的装备", options)
+
+            if choice == "0": break
+            try:
+                choice_idx = int(choice) - 1
+                if 0 <= choice_idx < len(equippable):
+                    slot, item = equippable[choice_idx]
+                    lvl = item.get("enhance_level", 0)
+                    cost = (lvl + 1) * 300 + item.get("level_req", 1) * 50
+
+                    if self.player.points >= cost:
+                        self.player.points -= cost
+                        self.player.stats["points_spent"] += cost
+
+                        item["enhance_level"] = lvl + 1
+
+                        # Remove old +X from name if exists
+                        import re
+                        clean_name = re.sub(r' \[\+\d+\]', '', item["name"])
+                        item["name"] = f"{clean_name} [+{lvl+1}]"
+
+                        # Enhance base stats by 15% per level
+                        if "attack" in item: item["attack"] = int(item["attack"] * 1.15)
+                        if "defense" in item: item["defense"] = int(item["defense"] * 1.15)
+                        for attr in ["str", "agi", "int", "con", "per", "cha"]:
+                            if attr in item: item[attr] = int(item[attr] * 1.10) + 1
+
+                        self.player.update_stats()
+                        print_success(f"🔨 叮！锻造成功！你的装备进化为了: {item['name']}")
+                    else:
+                        print_error("积分不足以进行这次锻造！")
+                    time.sleep(1.5)
+            except ValueError:
+                pass
+
+    def tavern(self):
+        import random
+        from classes.teammate import Teammate
+
+        while True:
+            clear_screen()
+            print_header("🍻 轮回小队酒馆 🍻")
+            print_info("这里聚集着来自不同位面的轮回者。你可以花费积分招募他们作为队友（最多4名）。")
+            print_info(f"当前积分: {self.player.points} | 当前队伍规模: {len(self.player.teammates)}/4")
+
+            if len(self.player.teammates) >= 4:
+                print_warning("你的队伍已满，无法招募更多队友！")
+                time.sleep(2)
+                break
+
+            # Generate 3 random mercenaries
+            mercs = []
+            cost_base = self.player.level * 800
+
+            names = ["剑客·亚索", "盾卫·亚瑟", "刺客·荆轲", "机械师·源氏", "法师·甘道夫", "狂战·奥拉夫", "游侠·温蒂"]
+            for _ in range(3):
+                m_name = random.choice(names)
+                names.remove(m_name)
+
+                # Scale stats around player level
+                m_hp = int(100 + self.player.level * random.uniform(15, 25))
+                m_atk = int(20 + self.player.level * random.uniform(3, 6))
+                m_def = int(10 + self.player.level * random.uniform(2, 5))
+                m_agi = int(15 + self.player.level * random.uniform(1, 3))
+
+                m_cost = int(cost_base * random.uniform(0.8, 1.2))
+                mercs.append({
+                    "name": m_name, "hp": m_hp, "attack": m_atk, "defense": m_def, "agi": m_agi, "cost": m_cost
+                })
+
+            options = {}
+            for idx, m in enumerate(mercs):
+                desc = f"HP:{m['hp']} ATK:{m['attack']} DEF:{m['defense']} AGI:{m['agi']}"
+                options[str(idx+1)] = f"招募【{m['name']}】 ({desc}) - 签约费: {m['cost']} 积分"
+
+            options["0"] = "离开酒馆"
+            choice = show_menu("今日可招募佣兵", options)
+
+            if choice == "0": break
+            try:
+                choice_idx = int(choice) - 1
+                if 0 <= choice_idx < len(mercs):
+                    m = mercs[choice_idx]
+                    if self.player.points >= m["cost"]:
+                        self.player.points -= m["cost"]
+                        self.player.stats["points_spent"] += m["cost"]
+
+                        new_mate = Teammate(m["name"], m["hp"], m["attack"], m["defense"], m["agi"])
+                        self.player.teammates.append(new_mate)
+
+                        print_success(f"🍻 招募成功！{m['name']} 加入了你的轮回小队！")
+                    else:
+                        print_error("积分不足以支付签约费！")
+                    time.sleep(1.5)
+            except ValueError:
+                pass
 
     def task_hall(self):
         clear_screen()

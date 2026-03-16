@@ -189,8 +189,13 @@ class Game:
             return
         if save_game_data(self.player):
             print_success("保存游戏成功！")
-            score = self.player.stats.get("kills", 0) * 50 + self.player.stats.get("points_spent", 0) + self.player.points
-            details = f"Lv.{self.player.level} | 成就:{len(self.player.achievements)}"
+
+            p_score = getattr(self.player, 'power_score', 0)
+            align = getattr(self.player, 'alignment_title', '轮回者')
+
+            score = self.player.stats.get("kills", 0) * 50 + self.player.stats.get("points_spent", 0) + self.player.points + (p_score * 2)
+            details = f"Lv.{self.player.level} | 战力:{p_score} | {align} | 成就:{len(self.player.achievements)}"
+
             self.leaderboard.update_record(self.player.name, score, details)
         else:
             print_error("保存游戏失败！")
@@ -215,11 +220,14 @@ class Game:
         print_info("按照主神空间的规则，失败者将被彻底抹杀，肉身与存在都将化为飞灰。")
         time.sleep(2)
         
-        marks_gained = self.player.stats.get("kills", 0) * 2 + self.player.level * 10
-        print_success(f"虽然肉身消逝，但你在本次轮回中的挣扎化作了 {marks_gained} 点【轮回印记】！")
+        p_score = getattr(self.player, 'power_score', 0)
+        align = getattr(self.player, 'alignment_title', '轮回者')
+
+        marks_gained = self.player.stats.get("kills", 0) * 2 + self.player.level * 10 + (p_score // 50)
+        print_success(f"虽然肉身消逝，但你的巅峰战力({p_score})与挣扎化作了 {marks_gained} 点【轮回印记】！")
         
-        score = self.player.stats.get("kills", 0) * 50 + self.player.stats.get("points_spent", 0) + self.player.points
-        details = f"Lv.{self.player.level} | 陨落"
+        score = self.player.stats.get("kills", 0) * 50 + self.player.stats.get("points_spent", 0) + self.player.points + (p_score * 2)
+        details = f"Lv.{self.player.level} | 战力:{p_score} | {align} | 陨落"
         self.leaderboard.update_record(self.player.name, score, details)
         
         meta = MetaSaveSystem()

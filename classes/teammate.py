@@ -44,6 +44,18 @@ class Teammate:
                 active_status.append(s)
         self.status = active_status
 
+    def take_damage(self, amount):
+        actual_damage = max(1, amount - self.defense)
+        self.hp -= actual_damage
+        if self.hp < 0:
+            self.hp = 0
+        return actual_damage
+
+    def heal(self, amount):
+        self.hp += amount
+        if self.hp > self.max_hp:
+            self.hp = self.max_hp
+
     def is_alive(self):
         return self.hp > 0
 

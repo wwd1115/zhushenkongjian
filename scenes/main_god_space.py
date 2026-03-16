@@ -224,16 +224,21 @@ class MainGodSpace:
             mercs = []
             cost_base = self.player.level * 800
 
-            names = ["剑客·亚索", "盾卫·亚瑟", "刺客·荆轲", "机械师·源氏", "法师·甘道夫", "狂战·奥拉夫", "游侠·温蒂"]
+            names = ["剑客·亚索", "盾卫·亚瑟", "刺客·荆轲", "机械师·源氏", "法师·甘道夫", "狂战·奥拉夫", "游侠·温蒂", "牧师·索拉卡", "重甲·蒙多"]
+
+            # Use unified power score to ensure mercenaries are viable against dynamically scaled Elite enemies
+            p_score = getattr(self.player, 'power_score', self.player.level * 80)
+            base_power = max(50, int(p_score * 0.8)) # Mercs are slightly weaker than player's total combined strength
+
             for _ in range(3):
                 m_name = random.choice(names)
                 names.remove(m_name)
 
-                # Scale stats around player level
-                m_hp = int(100 + self.player.level * random.uniform(15, 25))
-                m_atk = int(20 + self.player.level * random.uniform(3, 6))
-                m_def = int(10 + self.player.level * random.uniform(2, 5))
-                m_agi = int(15 + self.player.level * random.uniform(1, 3))
+                # Scale stats around the new base_power (which correctly accounts for player gems, pets, etc.)
+                m_hp = int(100 + base_power * random.uniform(0.6, 1.2))
+                m_atk = int(15 + base_power * random.uniform(0.15, 0.25))
+                m_def = int(10 + base_power * random.uniform(0.10, 0.20))
+                m_agi = int(10 + base_power * random.uniform(0.05, 0.15))
 
                 m_cost = int(cost_base * random.uniform(0.8, 1.2))
                 mercs.append({

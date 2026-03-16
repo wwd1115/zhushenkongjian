@@ -31,21 +31,13 @@ class ProceduralWorld:
         
         # 动态难度计算: 基于玩家真实评分而不是单纯的等级
         p = self.player
-        base_stats = p.str + p.agi + p.int + p.con + p.per + p.cha
-        gear_stats = 0
-        for eq in p.equipment.values():
-            if eq: gear_stats += eq.get("level_req", 1) * 10
-        pet_stats = 0
-        if getattr(p, 'active_pet', None):
-            pet_stats = p.active_pet.get("attack", 0) + p.active_pet.get("hp", 0) // 10
-
-        power_score = base_stats + gear_stats + pet_stats
+        power_score = getattr(p, 'power_score', 100)
 
         if player_level <= 1:
             self.base_difficulty = 0.6  # 严格限制新手关卡难度
         else:
             # 难度系数公式: 基础等级系数 + 基于真实战力的动态修正
-            baseline_expected_power = player_level * 30
+            baseline_expected_power = player_level * 80
             power_ratio = power_score / max(1, baseline_expected_power)
 
             # 如果玩家数值超模(碾压)，怪物强度会呈指数追赶

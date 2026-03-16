@@ -144,6 +144,25 @@ class Player:
         elif self.morality <= -20: return 0.05
         return 0.0
 
+    @property
+    def power_score(self):
+        """Unified score representing the actual combat power of the player and active pet."""
+        # Sum of all attributes (including gems, equipment, base)
+        attr_score = self.total_str + self.total_agi + self.total_int + self.total_con + self.total_per + self.total_cha
+
+        # Add flat attack/defense
+        combat_score = self.attack + self.defense
+
+        # Add Active Pet Power
+        pet_score = 0
+        pet = getattr(self, 'active_pet', None)
+        if pet:
+            stars = pet.get('stars', 1)
+            pet_score = (pet.get('hp', 0) // 10) + pet.get('attack', 0) + pet.get('defense', 0) + pet.get('speed', 0)
+            pet_score = int(pet_score * (1.0 + (stars - 1) * 0.3))
+
+        return int(attr_score + (combat_score * 0.5) + (pet_score * 0.5))
+
     def update_stats(self):
         """更新衍生属性"""
         # 防止超高等级引发整数溢出或负数防御

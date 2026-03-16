@@ -354,14 +354,13 @@ class MainGodSpace:
         from data.world_templates import TEMPLATES
         from scenes.world_engine import ProceduralWorld
         
-        power_score = (self.player.str + self.player.agi + self.player.int + 
-                       self.player.con + self.player.per)
+        power_score = getattr(self.player, 'power_score', 0)
                        
-        if power_score < 70: difficulty = "新手"
-        elif power_score < 120: difficulty = "进阶"
+        if power_score < 150: difficulty = "新手"
+        elif power_score < 300: difficulty = "进阶"
         else: difficulty = "精英"
             
-        print_header(f"轮回之门 - 当前评价等级: {difficulty} (评分: {power_score})")
+        print_header(f"轮回之门 - 当前评价等级: {difficulty} (综合评分: {power_score})")
         print_info("主神为你揭开了无数个未知的时空锚点...")
         
         options = {}

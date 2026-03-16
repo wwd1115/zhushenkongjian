@@ -839,7 +839,9 @@ class MainGodSpace:
         if choice == "1":
             self.player.heal(self.player.max_hp // 2)
             self.player.restore_mp(self.player.max_mp // 2)
-            print_success("休息完毕，生命和精神力恢复50%。")
+            for pet in getattr(self.player, 'pets', []):
+                pet["hp"] = min(pet.get("max_hp", pet.get("hp", 100)), pet.get("hp", 100) + pet.get("max_hp", pet.get("hp", 100)) // 2)
+            print_success("休息完毕，你、队友和灵宠的生命和精神力恢复50%。")
         elif choice == "2":
             if self.player.points >= 100:
                 self.player.points -= 100
@@ -848,7 +850,9 @@ class MainGodSpace:
                 self.player.purge_all_statuses()
                 for teammate in self.player.teammates:
                     teammate.hp = teammate.max_hp
-                print_success("高级恢复完毕，你和队友的状态全满，所有异常清除！")
+                for pet in getattr(self.player, 'pets', []):
+                    pet["hp"] = pet.get("max_hp", pet.get("hp", 100))
+                print_success("高级恢复完毕，你、队友和灵宠的状态全满，所有异常清除！")
             else:
                 print_error("积分不足！")
         time.sleep(1.5)

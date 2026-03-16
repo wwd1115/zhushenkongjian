@@ -285,11 +285,19 @@ class Player:
         self.status = active_status
 
     def purge_all_statuses(self):
-        """Aggressively clear all status ailments for the player and teammates."""
+        """Aggressively clear all status ailments for the player, teammates, and pets."""
         self.status = []
         self.status_effects = []
+
         for t in self.teammates:
             t.status = []
+
+        for p in getattr(self, 'pets', []):
+            p["status"] = []
+
+        active_pet = getattr(self, 'active_pet', None)
+        if active_pet:
+            active_pet["status"] = []
 
     def check_achievements(self):
         from classes.achievement import AchievementSystem

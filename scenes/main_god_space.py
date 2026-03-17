@@ -166,7 +166,7 @@ class MainGodSpace:
                     "data": {"bl_id": b_id, "level": lvl["level"], "cost": lvl["cost"], "lvl_idx": i, "bl_data": b_data},
                     "x": cx, "y": cy - 60 * (i + 1), "parents": [prev_id]
                 })
-                if getattr(self.player, 'bloodline', None) and self.player.bloodline and isinstance(self.player.bloodline, dict) and self.player.bloodline.get("name") == b_data["name"]:
+                if getattr(self.player, 'bloodline', None) and isinstance(self.player.bloodline, dict) and self.player.bloodline.get("name") == b_data["name"]:
                     my_lvl = self.player.bloodline.get("level")
                     my_idx = next((j for j, l in enumerate(b_data["levels"]) if l["level"] == my_lvl), -1)
                     if i <= my_idx: unlocked.append(lvl_id)

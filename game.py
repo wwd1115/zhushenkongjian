@@ -47,26 +47,9 @@ class Game:
     def create_character(self):
         clear_screen()
         print_header("轮回殿 - 灵魂重铸")
-
-        bonus_stats, bonus_points = self._handle_meta_bonuses()
-
-        clear_screen()
-        print_header("躯体塑造")
-        from utils.display import get_text_input
-        name = get_text_input("请输入新轮回者的名字: ")
-        if not name or name == "ENTER":
-            name = "轮回者一号"
-
-        self.player = Player(name)
-        
-        self._apply_bonuses(bonus_stats, bonus_points)
-        self._give_novice_gift_box()
-
-        print_success(f"躯体塑造完成！欢迎你，{self.player.name}。准备好迎接无限的世界吧！")
-        time.sleep(3.0)
-
-    def _handle_meta_bonuses(self):
         from save.meta_save import MetaSaveSystem
+        from utils.display import get_text_input
+        
         meta = MetaSaveSystem()
         bonus_stats = 0
         bonus_points = 0
@@ -81,21 +64,30 @@ class Game:
                     "0": "跳过兑换，直接开始"
                 }
                 c = show_menu("你可以消耗上一世的积累换取开局优势", options)
-                if c == "0": break
+                if c == "0":
+                    break
                 elif c == "1":
                     if meta.spend_marks(50):
                         bonus_stats += 5
                         print_success("兑换成功！开局全属性+5。")
-                    else: print_error("轮回印记不足！")
+                    else:
+                        print_error("轮回印记不足！")
                 elif c == "2":
                     if meta.spend_marks(30):
                         bonus_points += 1000
                         print_success("兑换成功！开局积分+1000。")
-                    else: print_error("轮回印记不足！")
+                    else:
+                        print_error("轮回印记不足！")
                 time.sleep(1.5)
-        return bonus_stats, bonus_points
 
-    def _apply_bonuses(self, bonus_stats, bonus_points):
+        clear_screen()
+        print_header("躯体塑造")
+        name = get_text_input("请输入新轮回者的名字: ")
+        if not name or name == "ENTER":
+            name = "轮回者一号"
+        self.player = Player(name)
+
+        # Apply bonuses
         if bonus_stats > 0:
             self.player.str += bonus_stats
             self.player.agi += bonus_stats
@@ -110,7 +102,6 @@ class Game:
         self.player.hp = self.player.max_hp
         self.player.mp = self.player.max_mp
 
-    def _give_novice_gift_box(self):
         # ====== Novice Grand Gift Box ======
         self.player.points += 3000
         print_success("【新手大礼包】主顾厚爱！你获得了 3000 点初始极品积分！")
@@ -135,8 +126,11 @@ class Game:
                 skill = random.choice(all_skills)
                 self.player.skills.append(skill)
                 print_success(f"【新手大礼包】醍醐灌顶！你提前领悟了强力技能: {skill['name']}！")
-        except Exception:
-            pass
+        except Exception as e:
+            pass # fallback if not found
+
+        print_success(f"躯体塑造完成！欢迎你，{self.player.name}。准备好迎接无限的世界吧！")
+        time.sleep(3.0)
 
     def load_game(self):
         clear_screen()
@@ -147,12 +141,6 @@ class Game:
             return
             
         self.player = Player(data.get("name", "轮回者"))
-        self._hydrate_player_data(data)
-
-        print_success("读取存档成功！")
-        time.sleep(1.5)
-
-    def _hydrate_player_data(self, data):
         self.player.level = data.get("level", 1)
         self.player.points = data.get("points", 1000)
         self.player.morality = data.get("morality", 0)
@@ -179,11 +167,15 @@ class Game:
         teammates_data = data.get("teammates", [])
         self.player.teammates = [Teammate.from_dict(t) for t in teammates_data]
 
+        print_success("读取存档成功！")
+        time.sleep(1.5)
+
     def save_game(self):
         if not self.player:
             return
         if save_game_data(self.player):
             print_success("保存游戏成功！")
+            # Update leaderboard
             score = self.player.stats.get("kills", 0) * 50 + self.player.stats.get("points_spent", 0) + self.player.points
             details = f"Lv.{self.player.level} | 成就:{len(self.player.achievements)}"
             self.leaderboard.update_record(self.player.name, score, details)
@@ -210,16 +202,20 @@ class Game:
         print_info("按照主神空间的规则，失败者将被彻底抹杀，肉身与存在都将化为飞灰。")
         time.sleep(2)
         
+        # 计算轮回印记
         marks_gained = self.player.stats.get("kills", 0) * 2 + self.player.level * 10
         print_success(f"虽然肉身消逝，但你在本次轮回中的挣扎化作了 {marks_gained} 点【轮回印记】！")
         
+        # 记录到排行榜
         score = self.player.stats.get("kills", 0) * 50 + self.player.stats.get("points_spent", 0) + self.player.points
         details = f"Lv.{self.player.level} | 陨落"
         self.leaderboard.update_record(self.player.name, score, details)
         
+        # 增加轮回印记
         meta = MetaSaveSystem()
         meta.add_marks(marks_gained)
         
+        # 删档重启
         delete_save_data()
         self.player = None
         

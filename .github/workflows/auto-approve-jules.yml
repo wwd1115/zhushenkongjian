@@ -1,0 +1,29 @@
+name: Auto Approve and Merge
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  pull-requests: write
+  contents: write  # 新增：允许机器人修改和合并代码
+
+jobs:
+  auto-approve-and-merge:
+    runs-on: ubuntu-latest
+    if: github.actor == 'google-labs-jules[bot]' || github.actor == 'wwd1115'
+    steps:
+      # 第一步：自动同意 (Approve)
+      - name: Approve Pull Request
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+        run: gh pr review --approve "$PR_URL"
+
+      # 第二步：自动合并 (Merge)
+      - name: Merge Pull Request
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+        # 使用 --merge 方式合并。如果你习惯压缩提交，可以改成 --squash
+        run: gh pr merge --merge --admin "$PR_URL"

@@ -85,3 +85,23 @@ def create_zombie(enemy_type="normal"):
         return Enemy("法老王虚影 (Boss)", hp=500, attack=60, speed=20, defense=20, special_ability="诅咒", drop_exp=300, drop_points=1000)
     else:
         return Enemy("未知生物", hp=50, attack=10, speed=5, drop_exp=10, drop_points=20)
+
+def create_fantasy_enemy(enemy_type="goblin"):
+    if enemy_type == "goblin":
+        return Enemy("哥布林掠夺者", hp=40, attack=15, speed=25, drop_exp=15, drop_points=30)
+    elif enemy_type == "orc_warrior":
+        return Enemy("兽人狂战士", hp=150, attack=35, speed=10, defense=10, drop_exp=60, drop_points=120)
+    elif enemy_type == "dragon_cub":
+        return Enemy("烈焰幼龙", hp=400, attack=70, speed=30, defense=30, special_ability="火焰吐息", drop_exp=200, drop_points=500)
+    else:
+        return Enemy("魔物", hp=50, attack=15, speed=10, drop_exp=10, drop_points=20)
+
+def create_cyber_enemy(enemy_type="drone"):
+    if enemy_type == "drone":
+        return Enemy("安保无人机", hp=60, attack=20, speed=35, drop_exp=25, drop_points=40)
+    elif enemy_type == "cyborg_ninja":
+        return Enemy("赛博忍者", hp=200, attack=60, speed=45, defense=15, special_ability="高频刃", drop_exp=80, drop_points=150)
+    elif enemy_type == "mech_boss":
+        return Enemy("重装机甲 (Boss)", hp=800, attack=120, speed=15, defense=50, special_ability="等离子炮", drop_exp=400, drop_points=800)
+    else:
+        return Enemy("故障机器人", hp=50, attack=15, speed=10, drop_exp=10, drop_points=20)

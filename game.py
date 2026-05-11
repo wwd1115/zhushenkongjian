@@ -59,6 +59,11 @@ class Game:
 
         self.player = Player(name)
         
+        # Merge global achievements into new character
+        from save.meta_save import MetaSaveSystem
+        meta = MetaSaveSystem()
+        self.player.achievements = list(set(self.player.achievements + meta.achievements))
+
         self._apply_bonuses(bonus_stats, bonus_points)
         self._give_novice_gift_box()
 
@@ -163,6 +168,8 @@ class Game:
         self.player.per = data.get("per", 10)
         self.player.cha = data.get("cha", 10)
         self.player.free_stats = data.get("free_stats", 0)
+        self.player.bloodline = data.get("bloodline")
+        self.player.cultivation = data.get("cultivation")
         
         self.player.update_stats()
         

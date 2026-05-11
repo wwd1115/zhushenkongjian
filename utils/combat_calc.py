@@ -324,41 +324,69 @@ class CombatSystem:
     def use_skill(self, skill, target):
         print_info(f"{self.player.name} 释放技能：【{skill['name']}】！")
         time.sleep(0.2)
-        if GUI_INSTANCE:
-            vfx_color = "orange" # default fireball color
-            if "冰" in skill['name'] or "霜" in skill['name']:
-                vfx_color = "cyan"
-            elif "剑" in skill['name'] or "斩" in skill['name']:
-                vfx_color = "white"
-            elif "毒" in skill['name']:
-                vfx_color = "purple"
-                
-            skill_event = {
-                "type": "skill", 
-                "attacker": self.player.actor_id, 
-                "target": target.actor_id,
-                "skill_name": skill['name'], 
-                "color": vfx_color,
-                "hit_event": None
-            }
+        vfx_color = "orange" # default fireball color
+        if "冰" in skill['name'] or "霜" in skill['name']:
+            vfx_color = "cyan"
+        elif "剑" in skill['name'] or "斩" in skill['name']:
+            vfx_color = "white"
+        elif "毒" in skill['name']:
+            vfx_color = "purple"
+        elif "雷" in skill['name']:
+            vfx_color = "yellow"
+
+        skill_event = {
+            "type": "skill",
+            "attacker": self.player.actor_id,
+            "target": target.actor_id,
+            "skill_name": skill['name'],
+            "color": vfx_color,
+            "hit_event": None
+        }
             
-        if skill["effect"] == "atk_up":
+        eff = skill.get("effect")
+        if eff == "atk_up":
             if GUI_INSTANCE:
                 GUI_INSTANCE.gui_combat_event(skill_event)
                 time.sleep(0.4)
-            self.player_attack(target, multiplier=2.0)
-        elif skill["effect"] == "heal_100":
+            self.player_attack(target, multiplier=2.5)
+        elif eff == "heal_100":
             target.heal(100)
             if GUI_INSTANCE:
                 GUI_INSTANCE.gui_combat_event({"type": "heal", "target": target.actor_id, "amount": 100, "hp": target.hp})
-            print_success(f"{target.name} 恢复了 100 点生命值！当前生命: {target.hp}/{target.max_hp}")
+            print_success(f"{target.name} 恢复了 100 点生命值！")
             time.sleep(0.5)
+        elif eff == "heal_huge":
+            amt = int(self.player.max_hp * 0.5)
+            self.player.heal(amt)
+            if GUI_INSTANCE:
+                GUI_INSTANCE.gui_combat_event({"type": "heal", "target": self.player.actor_id, "amount": amt, "hp": self.player.hp})
+            print_success(f"{self.player.name} 恢复了 {amt} 点生命值！")
+        elif eff == "dmg_fire" or eff == "dmg_ice" or eff == "dmg_lightning":
+            if GUI_INSTANCE:
+                GUI_INSTANCE.gui_combat_event(skill_event)
+                time.sleep(0.5)
+            self.player_attack(target, multiplier=2.0)
+        elif eff == "aoe_physical" or eff == "aoe_meteor":
+            if GUI_INSTANCE:
+                GUI_INSTANCE.gui_combat_event(skill_event)
+                time.sleep(0.5)
+            for e in self.enemies:
+                if e.is_alive():
+                    self.player_attack(e, multiplier=1.2)
+        elif eff == "dmg_multi_hit":
+            if GUI_INSTANCE:
+                GUI_INSTANCE.gui_combat_event(skill_event)
+                time.sleep(0.4)
+            for _ in range(3):
+                if target.is_alive():
+                    self.player_attack(target, multiplier=0.8)
+                    time.sleep(0.2)
         else:
             if GUI_INSTANCE:
                 skill_event["hit_event"] = {"type": "text", "text": "击中!", "color": "red"}
                 GUI_INSTANCE.gui_combat_event(skill_event)
                 time.sleep(0.5)
-            self.player_attack(target, multiplier=1.5)
+            self.player_attack(target, multiplier=1.8)
 
     def player_attack(self, target, multiplier=1.0):
         if GUI_INSTANCE:

@@ -41,6 +41,13 @@ class AchievementSystem:
                 if "reward_points" in ach:
                     self.player.points += ach["reward_points"]
                 
+                # Persist to global meta save
+                from save.meta_save import MetaSaveSystem
+                meta = MetaSaveSystem()
+                if key not in meta.achievements:
+                    meta.achievements.append(key)
+                    meta.save()
+
         for ach in new_unlocks:
             print_success(f"🏆 解锁成就: 【{ach['name']}】 - {ach['desc']} (奖励: {ach.get('reward_points', 0)} 积分)")
             time.sleep(1.5)

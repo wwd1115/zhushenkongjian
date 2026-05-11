@@ -207,9 +207,9 @@ class MainGodSpace:
         
         skills = []
         for key, val in self.skills_data.get("active", {}).items():
-            s = val.copy(); s["key"] = key; skills.append(s)
+            s = val.copy(); s["key"] = key; s["type"] = "active"; skills.append(s)
         for key, val in self.skills_data.get("passive", {}).items():
-            s = val.copy(); s["key"] = key; skills.append(s)
+            s = val.copy(); s["key"] = key; s["type"] = "passive"; skills.append(s)
             
         for i, s in enumerate(skills):
             cost = s.get("price", 500)
@@ -269,10 +269,14 @@ class MainGodSpace:
                 
             self.player.points -= cost
             self.player.stats["points_spent"] += cost
-            new_bl = {"id": bl_id, "name": bl_data["name"], "level": node["data"]["level"]}
             lvl_data = bl_data["levels"][lvl_idx]
-            for sk, sv in lvl_data.get("stats", {}).items():
-                self.player.stats[sk] = self.player.stats.get(sk, 0) + sv
+            new_bl = {
+                "id": bl_id,
+                "name": bl_data["name"],
+                "level": node["data"]["level"],
+                "stats": lvl_data.get("stats", {}),
+                "effects": lvl_data.get("effects", [])
+            }
             
             self.player.bloodline = new_bl
             self.player.update_stats()
@@ -292,10 +296,14 @@ class MainGodSpace:
 
             self.player.points -= cost
             self.player.stats["points_spent"] += cost
-            new_c = {"id": c_id, "name": c_data["name"], "level": node["data"]["level"]}
             lvl_data = c_data["levels"][lvl_idx]
-            for sk, sv in lvl_data.get("stats", {}).items():
-                self.player.stats[sk] = self.player.stats.get(sk, 0) + sv
+            new_c = {
+                "id": c_id,
+                "name": c_data["name"],
+                "level": node["data"]["level"],
+                "stats": lvl_data.get("stats", {}),
+                "effects": lvl_data.get("effects", [])
+            }
 
             self.player.cultivation = new_c
             self.player.update_stats()
@@ -431,9 +439,13 @@ class MainGodSpace:
                         self.player.points -= price
                         self.player.stats["points_spent"] += price
                         if category == "weapons":
+                            old_item = self.player.equipment.get("weapon")
+                            if old_item: self.player.inventory.append(old_item)
                             self.player.equipment["weapon"] = item
                             print_success(f"购买并装备了 {item['name']}!")
                         elif category == "armors":
+                            old_item = self.player.equipment.get("armor")
+                            if old_item: self.player.inventory.append(old_item)
                             self.player.equipment["armor"] = item
                             print_success(f"购买并装备了 {item['name']}!")
                         else:

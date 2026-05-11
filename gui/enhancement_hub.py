@@ -424,7 +424,7 @@ class EnhancementRenderer:
             
         self.canvas.create_line(x+20, y+h-50, x+w-20, y+h-50, fill=self.colors["locked"], dash=(4, 2))
         pts = self.player_stats.get('points', 0)
-        self.canvas.create_text(x+w/2, y+h-25, text=f"极光积分: {pts:,}", fill=self.colors["stat_bar"], font=("Consolas", 13, "bold"))
+        self.canvas.create_text(x+w/2, y+h-25, text=f"当前奖励点: {pts:,}", fill=self.colors["stat_bar"], font=("Consolas", 13, "bold"))
 
     def step(self):
         self.tick += 1

@@ -24,6 +24,8 @@ def save_game_data(player):
         "free_stats": player.free_stats,
         "hp": player.hp,
         "mp": player.mp,
+        "bloodline": getattr(player, 'bloodline', None),
+        "cultivation": getattr(player, 'cultivation', None),
         "inventory": player.inventory,
         "equipment": player.equipment,
         "skills": player.skills,
@@ -31,9 +33,13 @@ def save_game_data(player):
         "achievements": player.achievements,
         "teammates": [t.to_dict() for t in player.teammates]
     }
-    with open(SAVE_FILE, 'w', encoding='utf-8') as f:
-        json.dump(data, f, ensure_ascii=False, indent=4)
-    return True
+    try:
+        with open(SAVE_FILE, 'w', encoding='utf-8') as f:
+            json.dump(data, f, ensure_ascii=False, indent=4)
+        return True
+    except Exception as e:
+        print(f"Error saving game: {e}")
+        return False
 
 def load_game_data():
     if not os.path.exists(SAVE_FILE):

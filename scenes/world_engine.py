@@ -239,9 +239,9 @@ class ProceduralWorld:
                     for _ in enemies:
                         if self.rng.randint(1, 100) <= 25:
                             eq = generate_equipment(self.player_level)
-                            print_success(f"战斗掉落: 获得了 {eq['name']}")
+                            GUI_INSTANCE.gui_print(f"⚔️ 战斗掉落：获得了装备 【{eq['name']}】！", "green")
                             self.player.inventory.append(eq)
-                            time.sleep(1)
+                            GUI_INSTANCE.gui_get_input({"0": "收起战利品"}, is_event=True)
             elif room["type"] == "treasure":
                 pts = self.rng.randint(50, 200)
                 GUI_INSTANCE.gui_update_status(f"发现宝箱！积分+{pts}")

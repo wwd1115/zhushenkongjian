@@ -33,9 +33,13 @@ def save_game_data(player):
         "achievements": player.achievements,
         "teammates": [t.to_dict() for t in player.teammates]
     }
-    with open(SAVE_FILE, 'w', encoding='utf-8') as f:
-        json.dump(data, f, ensure_ascii=False, indent=4)
-    return True
+    try:
+        with open(SAVE_FILE, 'w', encoding='utf-8') as f:
+            json.dump(data, f, ensure_ascii=False, indent=4)
+        return True
+    except Exception as e:
+        print(f"Error saving game: {e}")
+        return False
 
 def load_game_data():
     if not os.path.exists(SAVE_FILE):

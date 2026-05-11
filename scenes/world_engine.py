@@ -65,11 +65,14 @@ class ProceduralWorld:
         pool = self.template.enemy_pool
         
         for _ in range(count):
-            if is_boss:
+            if not pool:
+                # Fallback if pool is empty for some reason
+                base_e = {"name": "未知虚空体", "hp": 50, "attack": 10, "agi": 5, "drop_points": 10}
+            elif is_boss:
                 base_e = pool[-1]
             else:
                 # Level 1-2 only see the first 2 enemies in the pool
-                cap = min(len(pool) - 1, max(2, (self.player_level // 3) + 2))
+                cap = max(1, min(len(pool), (self.player_level // 3) + 2))
                 base_e = self.rng.choice(pool[:cap])
                 
             name = f"首领·{base_e['name']}" if is_boss else base_e["name"]
@@ -119,8 +122,9 @@ class ProceduralWorld:
             response = GUI_INSTANCE.gui_get_input({"0": "尝试撤离 (需回到起点)", "5": "查看属性与背包"}, is_map=True)
             if response == "0":
                 if self.map_data[self.player_y][self.player_x].get("type") == "start":
-                    confirm = get_input("确认要强行撤离吗？放弃任务将无法获得结算奖励。(Y/n): ")
-                    if confirm.lower() == 'y' or confirm == '':
+                    conf_opts = {"1": "确认撤离", "0": "继续任务"}
+                    confirm = show_menu("确认要强行撤离吗？放弃任务将无法获得结算奖励。", conf_opts)
+                    if confirm == "1":
                         break
                 else:
                     GUI_INSTANCE.gui_update_status("必须回到起点 (绿格) 才能撤离！")

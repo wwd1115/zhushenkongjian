@@ -41,7 +41,8 @@ def trigger_random_event(player, world_id):
         if "req_stat" in selected_opt and "req_val" in selected_opt:
             req_stat = selected_opt["req_stat"]
             req_val = selected_opt["req_val"]
-            player_val = getattr(player, req_stat, 0)
+            # Check total_stat first, fallback to base stat
+            player_val = getattr(player, f"total_{req_stat}", getattr(player, req_stat, 0))
             if player_val < req_val:
                 success = False
                 

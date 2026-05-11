@@ -18,6 +18,10 @@ class AchievementSystem:
 
     def check_achievements(self):
         new_unlocks = []
+        meta_updated = False
+        from save.meta_save import MetaSaveSystem
+        meta = MetaSaveSystem()
+
         for key, ach in self.achievements_data.items():
             if key in self.player.achievements:
                 continue
@@ -41,12 +45,13 @@ class AchievementSystem:
                 if "reward_points" in ach:
                     self.player.points += ach["reward_points"]
                 
-                # Persist to global meta save
-                from save.meta_save import MetaSaveSystem
-                meta = MetaSaveSystem()
+                # Update global meta save list
                 if key not in meta.achievements:
                     meta.achievements.append(key)
-                    meta.save()
+                    meta_updated = True
+
+        if meta_updated:
+            meta.save()
 
         for ach in new_unlocks:
             print_success(f"🏆 解锁成就: 【{ach['name']}】 - {ach['desc']} (奖励: {ach.get('reward_points', 0)} 积分)")

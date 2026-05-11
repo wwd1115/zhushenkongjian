@@ -139,14 +139,17 @@ class ProceduralWorld:
             
         if self.player.is_alive():
             clear_screen()
-            print_success(f"任务完成！回归主神空间！")
-            
-            # 结算经验
-            exp_reward = int(self.base_difficulty * 100) + (self.total_enemies_killed_here * 50) + (self.total_exploration_steps * 20)
-            if self.quest["type"] == "boss":
-                exp_reward += 500
+            if self.mission_completed:
+                print_success(f"任务完成！回归主神空间！")
                 
-            self.player.gain_exp(exp_reward)
+                # 结算经验
+                exp_reward = int(self.base_difficulty * 100) + (self.total_enemies_killed_here * 50) + (self.total_exploration_steps * 20)
+                if self.quest["type"] == "boss":
+                    exp_reward += 500
+
+                self.player.gain_exp(exp_reward)
+            else:
+                print_warning("你选择了撤离任务，无法获得任务结算奖励。")
             get_input("按回车键继续回归...")
             
     def generate_map(self):

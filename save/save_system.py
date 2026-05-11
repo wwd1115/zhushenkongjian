@@ -24,6 +24,8 @@ def save_game_data(player):
         "free_stats": player.free_stats,
         "hp": player.hp,
         "mp": player.mp,
+        "bloodline": getattr(player, 'bloodline', None),
+        "cultivation": getattr(player, 'cultivation', None),
         "inventory": player.inventory,
         "equipment": player.equipment,
         "skills": player.skills,

@@ -163,6 +163,8 @@ class Game:
         self.player.per = data.get("per", 10)
         self.player.cha = data.get("cha", 10)
         self.player.free_stats = data.get("free_stats", 0)
+        self.player.bloodline = data.get("bloodline")
+        self.player.cultivation = data.get("cultivation")
         
         self.player.update_stats()
         

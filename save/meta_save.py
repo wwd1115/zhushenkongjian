@@ -1,9 +1,14 @@
 import json
 import os
+import sys
 
 class MetaSaveSystem:
     def __init__(self):
-        self.file_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "meta_save.json")
+        if getattr(sys, 'frozen', False):
+            base_dir = os.path.dirname(sys.executable)
+        else:
+            base_dir = os.path.dirname(os.path.dirname(__file__))
+        self.file_path = os.path.join(base_dir, "data", "meta_save.json")
         self.marks = 0
         self.unlocked_perks = []
         self.achievements = []

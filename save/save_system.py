@@ -1,7 +1,14 @@
 import json
 import os
+import sys
 
-SAVE_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "save")
+def get_base_dir():
+    if getattr(sys, 'frozen', False):
+        # Running as EXE
+        return os.path.dirname(sys.executable)
+    return os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+SAVE_DIR = os.path.join(get_base_dir(), "save")
 SAVE_FILE = os.path.join(SAVE_DIR, "save_data.json")
 
 def ensure_save_dir():

@@ -126,8 +126,9 @@ class ProceduralWorld:
                     GUI_INSTANCE.gui_update_status("必须回到起点 (绿格) 才能撤离！")
             elif response == "5":
                 self.view_inventory_ui()
-                # Restore map view and status text after returning from inventory
+                # Restore status text after returning from inventory
                 GUI_INSTANCE.gui_update_status(f"探索 {self.name} | 任务: {q_desc}")
+                # Switch GUI back to map frame (raises it above text frame)
                 GUI_INSTANCE.gui_update_map_pos(self.player_x, self.player_y, self.map_data)
             elif isinstance(response, dict) and response.get("action") == "move":
                 cx = response.get("x")
@@ -415,87 +416,4 @@ class ProceduralWorld:
             self.mission_completed = True
 
     def view_inventory_ui(self):
-        # We temporarily borrow the inventory logic from MainGodSpace.
-        # A more robust solution would be refactoring this into player/game context.
-        from utils.display import GUI_INSTANCE, print_error, print_success, print_warning, print_info, get_input
-        import time
-        if not GUI_INSTANCE:
-            print_error("视觉背包与属性面板只能在 GUI 模式下运行！")
-            time.sleep(1.5)
-            return
-
-        def get_p_data():
-            p = self.player
-            eq = p.equipment
-            return {
-                "name": p.name, "level": p.level,
-                "hp": p.hp, "max_hp": p.max_hp,
-                "mp": p.mp, "max_mp": p.max_mp,
-                "str": p.str, "agi": p.agi, "int": p.int,
-                "con": p.con, "per": p.per, "cha": p.cha,
-                "weapon": eq["weapon"]["name"] if eq["weapon"] else "无",
-                "armor": eq["armor"]["name"] if eq["armor"] else "无",
-                "accessory": eq["accessory"]["name"] if eq["accessory"] else "无",
-                "inventory": p.inventory
-            }
-
-        def handle_inv_action(action):
-            act_type = action.get("type")
-            idx = action.get("index")
-            if act_type == "equip":
-                if 0 <= idx < len(self.player.inventory):
-                    item = self.player.inventory[idx]
-                    if item.get("type") in ["weapon", "armor", "accessory"]:
-                        slot = item["type"]
-                        old_item = self.player.equipment[slot]
-                        self.player.equipment[slot] = item
-                        if old_item: self.player.inventory.append(old_item)
-                        self.player.inventory.remove(item)
-                        print_success(f"已装备 {item['name']}")
-                    else:
-                        print_warning("该物品无法装备！")
-            elif act_type == "unequip":
-                slot = action.get("slot")
-                if self.player.equipment[slot]:
-                    item = self.player.equipment[slot]
-                    self.player.equipment[slot] = None
-                    self.player.inventory.append(item)
-                    print_info(f"已卸下 {item['name']}")
-            elif act_type == "use":
-                if 0 <= idx < len(self.player.inventory):
-                    item = self.player.inventory[idx]
-                    if item.get("type") == "consumable":
-                        effect = item.get("effect", {})
-                        if "hp" in effect:
-                            self.player.heal(effect["hp"])
-                            print_success(f"使用了 {item['name']}, 恢复了 {effect['hp']} 点生命！")
-                        if "mp" in effect:
-                            self.player.mp = min(self.player.max_mp, self.player.mp + effect["mp"])
-                            print_success(f"使用了 {item['name']}, 恢复了 {effect['mp']} 点法力！")
-                        self.player.inventory.remove(item)
-                    else:
-                        print_warning("该物品无法直接使用！")
-            elif act_type == "discard":
-                if 0 <= idx < len(self.player.inventory):
-                    item = self.player.inventory[idx]
-                    confirm = get_input(f"确定要丢弃 {item['name']} 吗？(y/N): ")
-                    if confirm.lower() == 'y':
-                        self.player.inventory.remove(item)
-                        print_info(f"丢弃了 {item['name']}")
-
-        # Save map state visually
-        GUI_INSTANCE.gui_end_map_exploration()
-
-        GUI_INSTANCE.gui_start_visual_inventory(get_p_data())
-        GUI_INSTANCE.gui_update_status("背包管理器 | 查看属性详情与物品")
-
-        while True:
-            response = GUI_INSTANCE.gui_get_input({"0": "返回探索"}, is_hub=False)
-            if response == "0": break
-            elif isinstance(response, dict) and "action" in response:
-                handle_inv_action(response["action"])
-                GUI_INSTANCE.gui_update_visual_inventory(get_p_data())
-
-        GUI_INSTANCE.gui_end_visual_inventory()
-        # The caller will restore the map exploration view.
-        GUI_INSTANCE.gui_start_map_exploration(self.map_data, self.player_x, self.player_y)
+        self.game.god_space.view_inventory_ui("返回探索")

@@ -472,7 +472,7 @@ class MainGodSpace:
                 print_error("积分不足！")
         time.sleep(1.5)
 
-    def view_inventory_ui(self):
+    def view_inventory_ui(self, back_text="返回空间"):
         from utils.display import GUI_INSTANCE
         if not GUI_INSTANCE:
             print_error("视觉背包与属性面板只能在 GUI 模式下运行！")
@@ -483,7 +483,7 @@ class MainGodSpace:
         GUI_INSTANCE.gui_update_status("背包管理器 | 查看属性详情与物品")
         
         while True:
-            response = GUI_INSTANCE.gui_get_input({"0": "返回空间"}, is_hub=False)
+            response = GUI_INSTANCE.gui_get_input({"0": back_text}, is_hub=False)
             if response == "0": break
             elif isinstance(response, dict) and "action" in response:
                 self._handle_inventory_action(response["action"])

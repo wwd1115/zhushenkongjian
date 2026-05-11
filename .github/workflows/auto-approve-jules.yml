@@ -13,14 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     if: github.actor == 'google-labs-jules[bot]' || github.actor == 'wwd1115'
     steps:
-      # 第一步：自动同意 (Approve)
-      - name: Approve Pull Request
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PR_URL: ${{ github.event.pull_request.html_url }}
-        run: gh pr review --approve "$PR_URL"
-
-      # 第二步：自动合并 (Merge)
+      # 第一步：自动合并 (Merge)
       - name: Merge Pull Request
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
